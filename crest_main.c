@@ -413,7 +413,6 @@ void Okeygen(unsigned char *pps, int num_users, char **public_keys, char **km, c
   //get randomly generated user gamma value
   *gamma = (char*)malloc(sizeof(char)*MAX_ELEMENT_LEN);
   element_snprint(*gamma,MAX_ELEMENT_LEN,gbs->gamma);  //get randomly picked gamma as a string
-  printf("%s\n",*gamma);
 
   if(num_users!=gbs->num_users)
   {

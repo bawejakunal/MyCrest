@@ -13,6 +13,7 @@ var access_token;
 var token_type;
 var set_time;
 var shared_list;
+var uniqueSharedList = [];
 
 //on starting extension check for cookies
 $(document).ready(function()
@@ -261,8 +262,15 @@ function startUpload()
             oReq.open("POST",CLOUD_SERVER+"get_id_list_gamma",true);
             oReq.responseType = "json";
             oReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            
+            //We need to remove duplicates to prevent double addition of user, else decryption will fail
+            uniqueSharedList = [];
+            $.each(shared_list, function(i, el){
+                if($.inArray(el, uniqueSharedList) === -1) uniqueSharedList.push(el);
+            });
+            
             var request_data = {
-                'shared_list':shared_list,
+                'shared_list':uniqueSharedList,
                 'user_id': user_id,
                 'filePath': folderPath+file.name+".crest"
             }
@@ -534,11 +542,20 @@ function shareFile(){
             oReq.open("POST",CLOUD_SERVER+'get_share_params',true);
             oReq.responseType = "json";
             oReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            //removing duplicates
+            uniqueSharedList = [];
+            $.each(shared_list, function(i, el){
+                if($.inArray(el, uniqueSharedList) === -1) uniqueSharedList.push(el);
+            });
+            console.log(uniqueSharedList);
+
             var request_data = {
                 'owner':user_id,
                 'filePath':filePath,
-                'email':shared_list
+                'email':uniqueSharedList
             };
+
             oReq.onload = function(oEvent){
                 //console.log(oReq.response);
                 if(oReq.response.success)
@@ -598,11 +615,19 @@ function revokeUser()
             oReq.open("POST", CLOUD_SERVER+'get_revoke_params',true);
             oReq.responseType = "json";
             oReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            
+            //removing duplicates
+            uniqueSharedList = [];
+            $.each(shared_list, function(i, el){
+                if($.inArray(el, uniqueSharedList) === -1) uniqueSharedList.push(el);
+            });            
+            
             var request_data = {
-                'email':shared_list,
+                'email':uniqueSharedList,
                 'owner':user_id,
                 'filePath':filePath
             };
+
             oReq.onload = function(oEvent){
                 console.log(oReq.response);
             };

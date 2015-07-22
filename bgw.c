@@ -124,7 +124,6 @@ void setup_global_broadcast_params(global_broadcast_params_t *sys,
   element_init_Zr(gbs->gamma, gbs->pairing);  //initialise gamma
   element_random(gbs->gamma); //pick random value of gamma
   //i=element_set_str(gbs->gamma, PRIVATE_GAMMA, PBC_CONVERT_BASE); //set a randomly picked gamma
-  element_printf("%B\n",gbs->gamma);
 
   //For simplicity & so code was easy to read
   gbs->gs = lgs;
