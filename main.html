@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<head>
+    <title>CREST</title>
+    <link rel="icon" type="image/png" href="img/icon.png">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="bootstrap/css/normalize.css" type="text/css">
+    <script src="js/jquery-1.11.2.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/example.js"></script>
+    <script src="js/dropbox.js"></script>
+</head>
+
+<body data-name="crest" data-tools="pnacl newlib glibc linux" data-configs="Debug Release" data-path="{tc}/{config}">
+    <header>
+    <div id="listener"></div>
+    <div class="navbar">
+        <div>
+            <ul class="nav pull-right">
+                <li>
+                    <button id="login" class="btn btn-default">
+                        <span class="glyphicon glyphicon-user"></span>
+                        <span>Login</span>
+                    </button>
+                    <button id="logout" class="btn btn-default">
+                        <span class="glyphicon glyphicon-user"></span>
+                        <span>Logout</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <h2 class="text-center">CREST</h2>
+    <h5>Status: <code id="statusField">NO-STATUS</code></h5>
+    </header>    
+    <div class="row-fluid">
+        <div id="id_content"></div>
+		<div id="display_infor"></div>			
+    </div>
+    <div class="row-fluid">
+        <div class="span8" id = "iframe" style="margin:0px;padding:0px;overflow:hidden;">
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="emailModal" tabindex="-1" role="dialog" aria-labelledby="emailModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="emailModalLabel">Enter email address</h4>
+          </div>
+          <div class="modal-body">
+            <p>Please enter comma separated emails(no whitespaces)</p>
+            <input type="text" class="form-control" id="emailList" name="email">
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="emailSubmit" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+            <!-- <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--
+    This element will be populated with the messages that come from the NaCl
+    module. See example.js.
+    -->
+    <div id="log"></div>
+</body>
+</html>

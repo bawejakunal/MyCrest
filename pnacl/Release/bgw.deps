@@ -1,0 +1,4 @@
+# Updated by fix_deps.py
+pnacl/Release/bgw.o: bgw.c bgw.h
+bgw.c:
+bgw.h:

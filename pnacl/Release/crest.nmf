@@ -1,0 +1,12 @@
+{
+  "program": {
+    "portable": {
+      "pnacl-translate": {
+        "url": "crest.pexe"
+      },
+      "pnacl-debug": {
+        "url": "crest_unstripped.bc"
+      }
+    }
+  }
+}

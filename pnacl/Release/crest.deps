@@ -1,0 +1,66 @@
+# Updated by fix_deps.py
+pnacl/Release/crest.o: crest.cc \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/instance.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_instance.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_macros.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_stdint.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_resource.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb_console.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_bool.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_var.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/instance_handle.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/view.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/resource.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/pass_ref.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/rect.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_rect.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_point.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_size.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/point.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/size.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/logging.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/module.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_module.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb_core.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_completion_callback.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_time.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/core.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_array_buffer.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_dictionary.h \
+  /home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_array.h \
+  bgw.h crest_main.h
+crest.cc:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/instance.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_instance.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_macros.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_stdint.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_resource.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb_console.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_bool.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_var.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/instance_handle.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/view.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/resource.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/pass_ref.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/rect.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_rect.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_point.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_size.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/point.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/size.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/logging.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/module.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_module.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/ppb_core.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_completion_callback.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/c/pp_time.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/core.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_array_buffer.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_dictionary.h:
+/home/kunal/Documents/nacl_sdk/pepper_43/include/ppapi/cpp/var_array.h:
+bgw.h:
+crest_main.h:

@@ -1,0 +1,5 @@
+# Updated by fix_deps.py
+pnacl/Release/crest_main.o: crest_main.c crest_main.h bgw.h
+crest_main.c:
+crest_main.h:
+bgw.h:
