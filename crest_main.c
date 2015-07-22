@@ -467,3 +467,83 @@ void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1,
 
   return;
 }
+
+void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str)
+{
+  
+  element_t C0,OC1,C1,t,EK,t_new;
+  global_broadcast_params_t gbs;
+  char *ek1;
+  int len,i;
+  unsigned char *temp_k1 = (unsigned char*)malloc(SHA_DIGEST_LENGTH*sizeof(unsigned char*));
+  unsigned char *temp_k1_new = (unsigned char*)malloc(SHA_DIGEST_LENGTH*sizeof(unsigned char*));
+  unsigned char *temp = (unsigned char*)malloc(385*sizeof(unsigned char));
+
+  setup_global_broadcast_params(&gbs,pps);
+
+  element_init_Zr(t,gbs->pairing);
+  element_set_str(t,t_str,PBC_CONVERT_BASE);
+
+  element_init(EK, gbs->pairing->GT);
+  element_pairing(EK, gbs->gs[0],gbs->gs[gbs->num_users-1]);
+  element_pow_zn(EK,EK,t);  //recovered the latest EK
+  
+  //generate k1
+  ek1 = (char*)malloc(MAX_ELEMENT_LEN);
+  element_snprint(ek1,MAX_ELEMENT_LEN,EK);
+  strcat(ek1,"1");
+  SHA1((unsigned char*)ek1,strlen(ek1),temp_k1);
+  len = public_encrypt(temp_k1,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp);
+  Base64Encode(temp, len, k1);
+  free(temp_k1);
+
+  element_init_Zr(t_new,gbs->pairing);
+  element_random(t_new);
+  element_snprint(t_new_str,MAX_ELEMENT_LEN,t_new);
+  
+  //generate k1'
+  element_pow_zn(EK,EK,t_new);
+  element_snprint(ek1,MAX_ELEMENT_LEN,EK);
+  strcat(ek1,"1");
+  SHA1((unsigned char*)ek1,strlen(ek1),temp_k1_new);
+  len = public_encrypt(temp_k1_new,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp);
+  Base64Encode(temp, len, k1_new);
+  free(ek1);
+  free(temp);
+  free(temp_k1_new);
+
+  element_init(C0,gbs->pairing->G1);
+  element_init(C1,gbs->pairing->G1);
+  element_init(OC1,gbs->pairing->G1);
+  element_set_str(C0,CM->C0,PBC_CONVERT_BASE);
+  element_set_str(C1,CM->C1,PBC_CONVERT_BASE);
+  element_set_str(OC1,CM->OC1,PBC_CONVERT_BASE);
+
+  //C0 = (C0)^t'
+  element_pow_zn(C0,C0,t_new);
+  //CM->C0 = (char*)malloc(sizeof(char)*MAX_ELEMENT_LEN);
+  printf("%s\n",CM->C0);
+  element_snprint(CM->C0,MAX_ELEMENT_LEN,C0);
+  printf("%s\n",CM->C0);
+
+  //OC1'
+  for(i=0;i<num_users;i++)
+  {
+    element_pow_zn(gbs->gs[(gbs->num_users)-revoke[i]],gbs->gs[(gbs->num_users)-revoke[i]],t);
+    element_div(OC1,OC1,gbs->gs[(gbs->num_users)-revoke[i]]);
+  }
+  element_snprint(CM->OC1,MAX_ELEMENT_LEN,OC1);
+
+  //C1'=(OC1)^t'
+  element_pow_zn(C1,OC1,t_new);
+  element_snprint(CM->C1,MAX_ELEMENT_LEN,C1);
+
+  element_clear(C0);
+  element_clear(C1);
+  element_clear(OC1);
+  element_clear(t);
+  element_clear(t_new);
+  element_clear(EK);
+
+  return;
+}

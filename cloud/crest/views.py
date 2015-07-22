@@ -316,9 +316,8 @@ def get_revoke_params(request):
     try:
         File = FileDB.objects.get(filePath=data['filePath'],owner_id=data['owner'])
         file_share = FileShare.objects.filter(File_id=File.id).values_list('receiver_id',flat=True)
-
-        print file_share
-
+        user = User.objects.get(id=NUM_USERS)   #treat last user as server
+        
         for email in data['email']:
             try:
                 receiver = User.objects.get(email=email)
@@ -335,7 +334,8 @@ def get_revoke_params(request):
                 'C0':File.C0,
                 'C1':File.C1,
                 't':File.t,
-                'revoke_list':id_list
+                'revoke_list':id_list,
+                'publicKey':user.public_rsa
             }
         else:
             return_data={

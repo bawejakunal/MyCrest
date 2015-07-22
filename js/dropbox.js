@@ -548,7 +548,6 @@ function shareFile(){
             $.each(shared_list, function(i, el){
                 if($.inArray(el, uniqueSharedList) === -1) uniqueSharedList.push(el);
             });
-            console.log(uniqueSharedList);
 
             var request_data = {
                 'owner':user_id,
@@ -629,11 +628,34 @@ function revokeUser()
             };
 
             oReq.onload = function(oEvent){
-                console.log(oReq.response);
+                if(oReq.response.success)
+                {
+                    get_pps_params(function(ppsParams){
+                        common.naclModule.postMessage({
+                            action: "revoke",
+                            OC0: oReq.response.OC0,
+                            OC1: oReq.response.OC1,
+                            C0: oReq.response.C0,
+                            C1: oReq.response.C1,
+                            t: oReq.response.t,
+                            publicKey:oReq.response.publicKey,
+                            revoke: oReq.response.revoke_list,
+                            ppsParams: ppsParams
+                        });
+                    });
+                }
+                else
+                    console.log(oReq.response);
             };
             oReq.send(JSON.stringify(request_data));
         }
         else
             console.log("No users to be revoked");
     });
+}
+
+//This function is to complete the user revoke actions
+function completeUserRevoke(data)
+{
+    console.log(data);
 }

@@ -342,18 +342,11 @@ var common = (function() {
         completeShareFile(message_event.data);
         return;
       }
-    //   else if (message_event.data.event.toString() === 'revocation'){        
-    //     completeRevocation(message_event.data);
-    //     return;
-    //   }
-    //   else if (message_event.data.event.toString() === 'sharing'){        
-    //     completeSharing(message_event.data);
-    //     return;
-    //   }
-    //   else if (message_event.data.event.toString() === 'setup'){        
-    //     completeSetup(message_event.data);
-    //     return;
-    //   }
+      else if(message_event.data.action.toString() === 'revoke')
+      {
+        completeUserRevoke(message_event.data);
+        return;
+      }
     }
 
     if (typeof window.handleMessage !== 'undefined') {

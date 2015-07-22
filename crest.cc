@@ -43,7 +43,6 @@ class CrestInstance : public pp::Instance {
       char *gamma;
       int i,num_users;
 
-      pp::Var var_content;
       pp::VarDictionary reply,key_material;
       std::string pkey;
       pp::Var ppsParams = dict_message.Get("ppsParams");
@@ -60,8 +59,7 @@ class CrestInstance : public pp::Instance {
       for(i=1;i<=num_users;i++)
       {
         sprintf(key, "%d", i);
-        var_content = public_key_dict.Get(key);
-        pkey = var_content.AsString();
+        pkey = public_key_dict.Get(key).AsString();
         public_keys[i-1]=(char*)malloc(pkey.length()+1);
         sprintf(public_keys[i-1], "%s",pkey.c_str());
       }
@@ -229,6 +227,66 @@ class CrestInstance : public pp::Instance {
       free(C1_new);
       free(shared_users);
       pps_buffer.Unmap();
+    }
+    else if (action=="revoke")
+    {
+      pp::VarDictionary reply;
+      std::string OC0,OC1,C0,C1,t,publicKey;
+      OC0 = dict_message.Get("OC0").AsString();
+      OC1 = dict_message.Get("OC1").AsString();
+      C0 = dict_message.Get("C0").AsString();
+      C1 = dict_message.Get("C1").AsString();
+      t = dict_message.Get("t").AsString();
+      publicKey = dict_message.Get("publicKey").AsString();
+      pp::VarArrayBuffer pps_buffer(dict_message.Get("ppsParams"));
+      if (pps_buffer.ByteLength() == 0)
+        return;
+      unsigned char* pps = static_cast<unsigned char*>(pps_buffer.Map());
+      pp::VarArray revoke(dict_message.Get("revoke"));
+      int i, num_users = revoke.GetLength();
+      int *revoke_list = (int*)malloc(sizeof(int)*num_users);
+
+      for (i = 0; i < num_users; ++i)
+        revoke_list[i] = revoke.Get(i).AsInt();
+
+      char *C0_new, *OC1_new, *C1_new,*t_str;
+      char **k1,**k1_new;
+      C0_new = (char*)malloc(MAX_ELEMENT_LEN*sizeof(char));
+      C1_new = (char*)malloc(MAX_ELEMENT_LEN*sizeof(char));
+      OC1_new = (char*)malloc(MAX_ELEMENT_LEN*sizeof(char));
+      t_str = (char*)malloc(MAX_ELEMENT_LEN*sizeof(char));
+
+      ct_text CM = (ct_text)malloc(sizeof(ct_header));
+      CM->OC0=(char*)OC0.c_str();
+      CM->OC1=(char*)OC1.c_str();
+      CM->C0=(char*)C0.c_str();
+      CM->C1=(char*)C1.c_str();
+
+      k1 = (char**)malloc(sizeof(char*));
+      k1_new = (char**)malloc(sizeof(char*));
+
+      revokeUser(pps,CM,t.c_str(),publicKey.c_str(),revoke_list,num_users,k1,k1_new,t_str);
+
+      reply.Set("action","revoke");
+      reply.Set("revoke",revoke);
+      reply.Set("OC1",CM->OC1);
+      reply.Set("C1",CM->C1);
+      reply.Set("C0",CM->C0);
+      reply.Set("k1",*k1);
+      reply.Set("k1_new",*k1_new);
+      reply.Set("t",t_str);
+
+      PostMessage(reply);
+
+      //free the memory
+      pps_buffer.Unmap();
+      free(*k1_new);
+      free(k1_new);
+      free(*k1);
+      free(k1);
+      free(C0_new);
+      free(C1_new);
+      free(OC1_new);
     }
   }
 };
