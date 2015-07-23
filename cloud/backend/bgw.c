@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <openssl/sha.h>
 #include "bgw.h"
 
@@ -21,6 +22,7 @@ void FreeGBP(global_broadcast_params_t gbp)
   //do something about the pairing
   element_clear(gbp->alpha);
   element_clear(gbp->g);
+  pairing_clear(gbp->pairing);
   int i;
   for(i = 0; i < 2*gbp->num_users; i++) {
     if(i == gbp->num_users)
@@ -79,14 +81,6 @@ void setup_global_broadcast_params(global_broadcast_params_t *sys, int num_users
   *sys = gbs;
 }
 
-void log_pbc_element(element_t e, char* message){
-  char* s = (char*) malloc(MAX_ELEMENT_LEN);
-  int t;
-  t = element_snprint(s, MAX_ELEMENT_LEN, e);
-  printf( " message: %s, Log: %s\n", message, s);
-  free(s);
-}
-
 static inline int in(element_t elem, unsigned char *my_feed) {
   int sz;
   printf( "Prepare reading sz\n");
@@ -97,119 +91,6 @@ static inline int in(element_t elem, unsigned char *my_feed) {
   element_from_bytes(elem, data);
   pbc_free(data);
   return sz+4;
-}
-
-void restore_global_broadcast_params2(global_broadcast_params_t *sys){
-  unsigned char * buffer = 0;
-  long length;
-  FILE * f = fopen ("/tmp/gbs.txt", "rb");
-
-  if (f){
-    fseek (f, 0, SEEK_END);
-    length = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    buffer = (unsigned char*) malloc (length+1);
-    if (buffer)
-    {
-      fread (buffer, 1, length, f);
-    }
-    fclose (f);
-  }
-
-  if (buffer){
-    unsigned char* gbs_header = buffer;
-    global_broadcast_params_t gbs;
-    gbs = pbc_malloc(sizeof(struct global_broadcast_params_s));
-     // Setup curve in gbp
-    size_t count = strlen(PBC_PAIRING_PARAMS);
-    if (pairing_init_set_buf(gbs->pairing, PBC_PAIRING_PARAMS, count)) pbc_die("pairing init failed");
-
-
-    int num_users;
-    memcpy(&num_users, gbs_header, 4);
-    printf( "N = %d\n", num_users);
-    gbs->num_users = num_users;
-    gbs_header= gbs_header+4;
-    printf( "Done reading N \n");
-    element_t *lgs;
-    int i;
-    lgs = pbc_malloc(2 * num_users * sizeof(element_t));
-
-    //generate g
-    element_init(gbs->g, gbs->pairing->G1);
-    gbs_header += in(gbs->g, gbs_header);
-    printf( "Done reading G \n");
-    log_pbc_element(gbs->g, "PUBLIC G");
-
-    //Fill in the gs array
-    for(i = 0; i < 2*num_users; i++) {
-      element_init(lgs[i], gbs->pairing->G1);
-      if(i == num_users)
-        continue;
-      gbs_header += in(lgs[i], gbs_header);
-    }
-    printf("Done getting lgs\n");
-    //For simplicity & so code was easy to read
-    gbs->gs = lgs;
-    *sys = gbs;
-   }
-}
-
-void restore_global_broadcast_params(global_broadcast_params_t *sys)
-{
-  global_broadcast_params_t gbs;
-
-  gbs = pbc_malloc(sizeof(struct global_broadcast_params_s));
-
-  // Setup curve G in gbs
-  size_t count = strlen(PBC_PAIRING_PARAMS);
-  if (!count) pbc_die("input error");
-  if (pairing_init_set_buf(gbs->pairing, PBC_PAIRING_PARAMS, count))
-    pbc_die("pairing init failed");
-
-  FILE* file;
-  file = fopen("/tmp/gbs.txt" , "r");
-  char* line;
-  size_t len=0;
-  ssize_t read;
-  int t, i=0, num_users;
-  element_t *lgs;
-
-  element_init_Zr(gbs->alpha, gbs->pairing);
-  t=element_set_str(gbs->alpha, PRIVATE_ALPHA, PBC_CONVERT_BASE);
-
-  while ((read = getline(&line, &len, file)) != -1) {
-    char* tmp=strdup(line);
-    strtok(tmp, "\n");
-    if (i==0){
-      num_users = atoi(tmp);
-      gbs->num_users = num_users;
-      lgs = pbc_malloc(2 * num_users * sizeof(element_t));
-      if(!(lgs)) {
-        printf("\nMalloc Failed\n");
-        printf("Didn't finish system setup\n\n");
-      }
-    }
-    else if (i == 1){
-       //Set G as a chosen public value
-      element_init(gbs->g, gbs->pairing->G1);
-      t=element_set_str(gbs->g, tmp, PBC_CONVERT_BASE);
-    }
-
-    else{
-      if (i-2 == num_users)
-        i++;
-      element_init(lgs[i-2], gbs->pairing->G1);
-      t=element_set_str(lgs[i-2], tmp, PBC_CONVERT_BASE);
-    }
-    i++;
-    free(tmp);
-  }
-  fclose(file);
-
-  //For simplicity & so code was easy to read
-  gbs->gs = lgs;
-  *sys = gbs;
 }
 
 //write bytes stream of element_t to a file
@@ -263,80 +144,92 @@ void store_gbp_params(char *system_file,
   return;
 }
 
-void update_after_revocation(const char* file_id){
-  //read previous and current k1
-  FILE* file = fopen("/tmp/k.txt" , "r");
-  size_t len=0, clen;
-  ssize_t read;
-  char *old_k1, *new_k1;
-  char* line;
-  read = getline(&line, &len, file);
-  old_k1 = strdup(line);
-  read = getline(&line, &len, file);
-  new_k1 = strdup(line);
-  fclose(file);
-  strtok(old_k1, "\n");
-  strtok(new_k1, "\n");
 
-  printf("old_k1 %s\n", old_k1);
-  printf("new_k1 %s\n", new_k1);
+/* 
+ * Since it is a one time padded XOR based encryption this function can be used to both encrypt and decrypt the data
+ * Works in place on the input string
+ */
+void shaCrypt(unsigned char *input, int length, const char *key, int keylen)
+{
+  //size_t keylen = strlen(key);
+  int i, j, numOfChunks = (int)ceil((float)length/20.0);  //20 bytes is the length of sha1 hash
+  char *sha_in = (char*)malloc((keylen+2)*sizeof(char));
+  unsigned char *sha_out = (unsigned char*)malloc(20*sizeof(unsigned char));
+  char a[2];
+  strncpy(sha_in,key,(size_t)keylen);
+  sha_in[keylen]='\0';
 
-  // read the ciphertext
-  char* filename = (char*) malloc (100);
-  strcpy(filename, "/tmp/");
-  strcat(filename, file_id);
-  unsigned char* aes_cipher;
-  FILE * f = fopen (filename, "rb");
-  if (f){
-    fseek (f, 0, SEEK_END);
-    clen = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    aes_cipher = (unsigned char*) malloc (clen);
-    if (aes_cipher)
+  for (i = 0; i < numOfChunks; ++i)
+  {
+    snprintf(a,2,"%d",i);
+    strcat(sha_in,a);
+
+    SHA1((unsigned char*)sha_in, strlen(sha_in), sha_out);  //generate SHA1 hash after concatenating the key
+
+    j=0;
+    while(j<SHA_DIGEST_LENGTH && (SHA_DIGEST_LENGTH*i + j)<length)
     {
-      fread (aes_cipher, 1, clen, f);
+      input[SHA_DIGEST_LENGTH*i + j] = input[SHA_DIGEST_LENGTH*i + j]^sha_out[j];
+      j++;
     }
-    fclose (f);
+    sha_in[strlen(sha_in)-1]='\0';
+  }
+  input[length]='\0';
+  free(sha_in);
+  free(sha_out);
+
+  return;
+}
+
+/* open file and re-encrypt outer layer*/
+int update_encryption(char *fileName, char *base_k1, char *base_k1_new)
+{
+  FILE *file;
+  size_t cipherlen,keylen;
+  unsigned char *ciphertext,*k1,*k1_new;
+
+  //read ciphertext from the file to be updated
+  file = fopen(fileName,"rb");  //open in read binary stream mode
+  if (file)
+  {
+    fseek (file, 0, SEEK_END);
+    cipherlen = ftell (file);
+    fseek (file, 0, SEEK_SET);
+    ciphertext = (unsigned char*) malloc(cipherlen*sizeof(unsigned char));
+    if (ciphertext)
+    {
+      fread (ciphertext, sizeof(unsigned char), cipherlen, file);
+    }
+    fclose (file);
   }
 
-  //now xor with each block...
-  int ilen=0;
-  unsigned char* k1hash;
-  unsigned char* k2hash;
-  size_t length=base64Decode(old_k1, &k1hash);
-  size_t length2=base64Decode(new_k1, &k2hash);
+  //decrypt the data
+  if(!Base64Decode(base_k1, &k1, &keylen))
+    shaCrypt(ciphertext,(int)cipherlen, (const char *)k1, SHA_DIGEST_LENGTH);
+  else
+    return 1;
 
-  for (ilen = 0; ilen < clen; ilen++)
-    printf("%d-", aes_cipher[ilen]);
-  printf("\n");
+  //re-encrypt the data
+  if(!Base64Decode(base_k1_new,&k1_new,&keylen))
+    shaCrypt(ciphertext,(int)cipherlen,(const char*)k1_new, SHA_DIGEST_LENGTH);
+  else
+    return 1;
 
-  unsigned char k_hash[SHA_DIGEST_LENGTH+1];
-  unsigned char kp_hash[SHA_DIGEST_LENGTH+1];
-  ilen=0;
-  while (ilen < clen){
-    int working_size = SHA_DIGEST_LENGTH;
-    if (ilen + SHA_DIGEST_LENGTH > clen)
-      working_size = clen - ilen;
-    memcpy(k_hash, k1hash, SHA_DIGEST_LENGTH);
-    memcpy(kp_hash, k2hash, SHA_DIGEST_LENGTH);
-    k_hash[SHA_DIGEST_LENGTH] = '1';
-    kp_hash[SHA_DIGEST_LENGTH] = '1';
-    length = sizeof(k_hash);
-    SHA1(k_hash, length, k1hash);
-    SHA1(kp_hash, length, k2hash);
-    int j;
-    for (j=0; j < working_size; j++){
-      aes_cipher[ilen+j] ^= k1hash[j];
-      aes_cipher[ilen+j] ^= k2hash[j];
-    }
-    ilen += SHA_DIGEST_LENGTH;
+  //free the memory for keys
+  free(k1_new);
+  free(k1);
+
+  //write the encrypted data to file
+  file = fopen(fileName,"wb");
+  if (file)
+  {
+    fwrite(ciphertext, sizeof(unsigned char), cipherlen, file);
+    fclose(file);
   }
+  else
+    return 1;
 
-  for (ilen = 0; ilen < clen; ilen++)
-    printf("%d-", aes_cipher[ilen]);
-  printf("\n");
-
-  f=fopen(filename, "wb");
-  fwrite(aes_cipher, 1, clen, f);
-  fclose(f);
+  //free memory for ciphertext
+  free(ciphertext);
+  return 0;
 }

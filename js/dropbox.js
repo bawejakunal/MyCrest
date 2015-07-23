@@ -640,7 +640,8 @@ function revokeUser()
                             t: oReq.response.t,
                             publicKey:oReq.response.publicKey,
                             revoke: oReq.response.revoke_list,
-                            ppsParams: ppsParams
+                            ppsParams: ppsParams,
+                            filePath: filePath
                         });
                     });
                 }
@@ -657,5 +658,17 @@ function revokeUser()
 //This function is to complete the user revoke actions
 function completeUserRevoke(data)
 {
-    console.log(data);
+    var oReq = new XMLHttpRequest();
+    oReq.open("POST", CLOUD_SERVER+"revoke_users",true);
+    oReq.responseType ='json';
+    oReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    var request_data={
+        'access_token':getAccessToken(),
+        'ku':data,
+        'owner':user_id
+    };
+    oReq.onload = function(oEvent){
+        console.log(oReq.response);
+    };
+    oReq.send(JSON.stringify(request_data));
 }

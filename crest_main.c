@@ -521,10 +521,7 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
 
   //C0 = (C0)^t'
   element_pow_zn(C0,C0,t_new);
-  //CM->C0 = (char*)malloc(sizeof(char)*MAX_ELEMENT_LEN);
-  printf("%s\n",CM->C0);
   element_snprint(CM->C0,MAX_ELEMENT_LEN,C0);
-  printf("%s\n",CM->C0);
 
   //OC1'
   for(i=0;i<num_users;i++)

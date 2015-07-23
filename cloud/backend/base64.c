@@ -1,70 +1,56 @@
 #include "base64.h"
-#include <openssl/bio.h>
-#include <openssl/evp.h>
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-
-char* base64Encode(const unsigned char *message, const size_t length) {
-    BIO *bio;
-    BIO *b64;
-    FILE* stream;
-
-    int encodedSize = 4*ceil((double)length/3);
-    char *buffer = (char*)malloc(encodedSize+1);
-    if(buffer == NULL) {
-        fprintf(stderr, "Failed to allocate memory\n");
-        exit(1);
-    }
-     
-    stream = fmemopen(buffer, encodedSize+1, "w");
-    b64 = BIO_new(BIO_f_base64());
-    bio = BIO_new_fp(stream, BIO_NOCLOSE);
-    bio = BIO_push(b64, bio);
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-    BIO_write(bio, message, length);
-    (void)BIO_flush(bio);
-    BIO_free_all(bio);
-    fclose(stream);
-
-    return buffer;
+size_t calcDecodeLength(const char* b64input) { //Calculates the length of a decoded string
+  size_t len = strlen(b64input),
+    padding = 0;
+ 
+  if (b64input[len-1] == '=' && b64input[len-2] == '=') //last two chars are =
+    padding = 2;
+  else if (b64input[len-1] == '=') //last char is =
+    padding = 1;
+ 
+  return (len*3)/4 - padding;
 }
  
-int base64Decode(const char *b64message, unsigned char **buffer) {
-    BIO *bio;
-    BIO *b64;
-    int length = strlen(b64message);
-    int decodedLength = calcDecodeLength(b64message, length);
+int Base64Decode(char* b64message, unsigned char** buffer, size_t* length) { //Decodes a base64 encoded string
+  BIO *bio, *b64;
+ 
+  int decodeLen = calcDecodeLength(b64message);
+  *buffer = (unsigned char*)malloc(decodeLen + 1);
+ 
+  bio = BIO_new_mem_buf(b64message, -1);
+  b64 = BIO_new(BIO_f_base64());
+  bio = BIO_push(b64, bio);
+ 
+  BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
+  *length = BIO_read(bio, *buffer, strlen(b64message));
+  assert(*length == decodeLen); //length should equal decodeLen, else something went horribly wrong
 
-    *buffer = (unsigned char*)malloc(decodedLength+1);
-    if(*buffer == NULL) {
-        fprintf(stderr, "Failed to allocate memory\n");
-        exit(1);
-    }
-    FILE* stream = fmemopen((char*)b64message, length, "r");
-     
-    b64 = BIO_new(BIO_f_base64());
-    bio = BIO_new_fp(stream, BIO_NOCLOSE);
-    bio = BIO_push(b64, bio);
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-    decodedLength = BIO_read(bio, *buffer, length);
-    (*buffer)[decodedLength] = '\0';
-     
-    BIO_free_all(bio);
-    fclose(stream);
-     
-    return decodedLength;
+  (*buffer)[decodeLen] = '\0';
+  BIO_free_all(bio);
+ 
+  return (0); //success
 }
 
-int calcDecodeLength(const char *b64input, const size_t length) {
-    int padding = 0;
-    
-    // Check for trailing '=''s as padding
-    if(b64input[length-1] == '=' && b64input[length-2] == '=')
-        padding = 2;
-    else if (b64input[length-1] == '=')
-        padding = 1;
-     
-    return (int)length*0.75 - padding;
+int Base64Encode(unsigned char* buffer, size_t length, char** b64text) { //Encodes a binary safe base 64 string
+  BIO *bio, *b64;
+  BUF_MEM *bufferPtr;
+ 
+  b64 = BIO_new(BIO_f_base64());
+  bio = BIO_new(BIO_s_mem());
+  bio = BIO_push(b64, bio);
+ 
+  BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Ignore newlines - write everything in one line
+  BIO_write(bio, buffer, length);
+  BIO_flush(bio);
+  BIO_get_mem_ptr(bio, &bufferPtr);
+  BIO_set_close(bio, BIO_NOCLOSE);
+
+  *b64text = (char*) malloc((bufferPtr->length + 1) * sizeof(char));
+  memcpy(*b64text, bufferPtr->data, bufferPtr->length);
+  (*b64text)[bufferPtr->length] = '\0';
+
+  BIO_free_all(bio);
+ 
+  return (0); //success
 }

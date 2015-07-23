@@ -275,6 +275,7 @@ class CrestInstance : public pp::Instance {
       reply.Set("k1",*k1);
       reply.Set("k1_new",*k1_new);
       reply.Set("t",t_str);
+      reply.Set("filePath",dict_message.Get("filePath").AsString());
 
       PostMessage(reply);
 

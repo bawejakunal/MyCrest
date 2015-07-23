@@ -349,3 +349,72 @@ def get_revoke_params(request):
         }
 
     return HttpResponse(json.dumps(return_data), content_type='application/json')
+
+
+#update the file metadata and revoke users
+@csrf_exempt
+def revoke_users(request):
+    data = json.loads(request.body)
+    try:
+        File = FileDB.objects.get(filePath=data['ku']['filePath'],owner_id=data['owner'])   #File record to be updated
+        
+        url = "https://api-content.dropbox.com/1/files/auto"+File.filePath
+        headers = {
+            "Authorization": 'Bearer ' + data['access_token']
+        }
+        
+        #process = subprocess.check_output("mkdir /tmp/"+str(data['owner']),shell=True,stderr=subprocess.STDOUT)
+        fileName = str(data['owner'])+'_'+str(File.filePath.split('/').pop())   #to prevent clashes prepend owner id to filename
+        localFilePath = "/tmp/"+fileName
+        with open(localFilePath, 'wb') as handle:
+            response = requests.get(url, headers=headers, stream=True)
+            if not response.ok:
+                raise Exception("File could not be downloaded from dropbox")
+
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    handle.write(chunk)
+                    handle.flush()
+
+        #call the backend to update the contents
+        process = subprocess.check_output(BACKEND+"mainbgw revoke "+localFilePath+" "+str(data['ku']['k1']+" "+str(data['ku']['k1_new'])), shell=True,\
+                                          stderr=subprocess.STDOUT)
+        #update the file to dropbox
+        upload_to_dropbox(File.filePath, localFilePath, data['access_token'])
+
+        # #update the file metadata in database
+        File.C0 = data['ku']['C0']
+        File.C1 = data['ku']['C1']
+        File.OC1 = data['ku']['OC1']
+        File.t = data['ku']['t']
+        File.save()
+
+        #remove the users from shared database
+        for receiver in data['ku']['revoke']:
+            FileShare.objects.get(File_id=File.id,owner_id=data['owner'],receiver_id=receiver).delete()
+
+        return_data={
+            'success':True,
+            'description':'Users revoked and file updated'
+        }
+    except Exception as e:
+        return_data={
+            'success':False,
+            'description':str(e)
+        }
+    return HttpResponse(json.dumps(return_data), content_type='application/json')
+
+
+def upload_to_dropbox(filePath, localFilePath, access_token):
+    url = "https://api-content.dropbox.com/1/files_put/auto"+filePath
+    
+    with open(localFilePath, "rb") as handle:
+        content = handle.read()
+        headers = {
+            "Authorization": "Bearer "+access_token,
+            "Content-Length": len(content)
+        }
+        response = requests.put(url, headers=headers, data = content)
+        if not response.ok:
+            raise Exception("Upload error")
+        print "FILE UPLOADED"

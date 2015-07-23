@@ -16,4 +16,5 @@ urlpatterns = [
 	url(r'^get_share_params$', views.get_share_params, name='get_share_params'),
 	url(r'^complete_file_share$', views.complete_file_share, name='complete_file_share'),
 	url(r'^get_revoke_params$', views.get_revoke_params, name='get_revoke_params'),
+	url(r'^revoke_users$', views.revoke_users, name='revoke_users'),
 ]
