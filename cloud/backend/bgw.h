@@ -8,7 +8,16 @@
 
 #include <string.h>
 #include "pbc.h"
-
+#include <openssl/sha.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/rsa.h>
+#include <openssl/bio.h>
+#include <openssl/sha.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <openssl/buffer.h>
 
 /* **********************************************************
    DEBUG having the debug flag turned on spews out lots of
@@ -71,11 +80,12 @@ void FreeGBP(global_broadcast_params_t gbp);
    the gs, the hs, and their inverses.  Chooses random alpha
    for the exponent.  num_users must be a multiple of 8.
 *********************************************************  */
-void setup_global_broadcast_params(global_broadcast_params_t *gbp, 
-				   int num_users);
+void setup_global_broadcast_params(global_broadcast_params_t *gbp, int num_users);
 
-void restore_global_broadcast_params(global_broadcast_params_t *gbp);
+int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted);
+
+int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted);
 
 void shaCrypt(unsigned char *input, int length, const char *key, int keylen);
 
-int update_encryption(char *fileName, char *base_k1, char *base_k1_new);
+int update_encryption(char *fileName, char *base_k1, char *base_k1_new, const char* privateKey);

@@ -10,8 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <openssl/sha.h>
 #include "bgw.h"
+
+int padding = RSA_PKCS1_PADDING;
 
 void FreeGBP(global_broadcast_params_t gbp)
 {
@@ -22,7 +23,6 @@ void FreeGBP(global_broadcast_params_t gbp)
   //do something about the pairing
   element_clear(gbp->alpha);
   element_clear(gbp->g);
-  pairing_clear(gbp->pairing);
   int i;
   for(i = 0; i < 2*gbp->num_users; i++) {
     if(i == gbp->num_users)
@@ -181,12 +181,54 @@ void shaCrypt(unsigned char *input, int length, const char *key, int keylen)
   return;
 }
 
+//intialise RSA parameters for key generation
+RSA * createRSA(unsigned char * key,int public)
+{
+    RSA *rsa= NULL;
+    BIO *keybio ;
+    keybio = BIO_new_mem_buf(key, -1);
+    if (keybio==NULL)
+    {
+        fprintf(stdout, "Failed to create key BIO");
+        return 0;
+    }
+    if(public)
+    {
+        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+    }
+    else
+    {
+        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+    }
+    if(rsa == NULL)
+    {
+        fprintf(stdout, "Failed to create RSA\n");
+    }
+ 
+    return rsa;
+}
+ 
+int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsigned char *encrypted)
+{
+    RSA * rsa = createRSA(key,1);
+    int result = RSA_public_encrypt(data_len,data,encrypted,rsa,padding);
+    return result;
+}
+int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
+{
+    RSA * rsa = createRSA(key,0);
+    int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
+    return result;
+}
+
 /* open file and re-encrypt outer layer*/
-int update_encryption(char *fileName, char *base_k1, char *base_k1_new)
+int update_encryption(char *fileName, char *base_k1, char *base_k1_new, const char* privateKey)
 {
   FILE *file;
   size_t cipherlen,keylen;
-  unsigned char *ciphertext,*k1,*k1_new;
+  unsigned char *ciphertext,*k1_temp,*k1_new_temp,*k1,*k1_new;
+
+  printf("%s\n", privateKey);
 
   //read ciphertext from the file to be updated
   file = fopen(fileName,"rb");  //open in read binary stream mode
@@ -204,20 +246,30 @@ int update_encryption(char *fileName, char *base_k1, char *base_k1_new)
   }
 
   //decrypt the data
-  if(!Base64Decode(base_k1, &k1, &keylen))
+  if(!Base64Decode(base_k1, &k1_temp, &keylen))
+  {
+    k1 = (unsigned char*)malloc(sizeof(unsigned char)*374);
+    keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1);
+    k1[keylen]='\0';
     shaCrypt(ciphertext,(int)cipherlen, (const char *)k1, SHA_DIGEST_LENGTH);
+    free(k1_temp);
+    free(k1);
+  }
   else
     return 1;
 
   //re-encrypt the data
-  if(!Base64Decode(base_k1_new,&k1_new,&keylen))
+  if(!Base64Decode(base_k1_new,&k1_new_temp,&keylen))
+  {
+    k1_new = (unsigned char*)malloc(sizeof(unsigned char)*374);
+    keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1_new);
+    k1_new[keylen]='\0';
     shaCrypt(ciphertext,(int)cipherlen,(const char*)k1_new, SHA_DIGEST_LENGTH);
+    free(k1_new_temp);
+    free(k1_new);
+  }
   else
     return 1;
-
-  //free the memory for keys
-  free(k1_new);
-  free(k1);
 
   //write the encrypted data to file
   file = fopen(fileName,"wb");
@@ -228,6 +280,10 @@ int update_encryption(char *fileName, char *base_k1, char *base_k1_new)
   }
   else
     return 1;
+
+  file = fopen("yolo.txt","w");
+  fprintf(file, "HELLO WORLD\n");
+  fclose(file);
 
   //free memory for ciphertext
   free(ciphertext);

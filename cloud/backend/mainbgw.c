@@ -4,7 +4,8 @@
 int main(int argc, char const *argv[])
 {
   int ret;
-  if (argc > 1){
+  if (argc > 1)
+  {
     if (argc == 3 && !strcmp(argv[1], "setup")){ 
       global_broadcast_params_t gbs;
       //Global Setup
@@ -31,9 +32,9 @@ int main(int argc, char const *argv[])
       FreeGBP(gbs); //removing alpha and associated parameters from memory
       return 0;
     }
-    else if (argc == 5 && !strcmp(argv[1], "revoke"))
+    else if (argc == 6 && !strcmp(argv[1], "revoke"))
     {
-      ret = update_encryption((char*)argv[2],(char*)argv[3],(char*)argv[4]);
+      ret = update_encryption((char*)argv[2],(char*)argv[3],(char*)argv[4],argv[5]);
       return ret;
     }
   }

@@ -316,7 +316,7 @@ def get_revoke_params(request):
     try:
         File = FileDB.objects.get(filePath=data['filePath'],owner_id=data['owner'])
         file_share = FileShare.objects.filter(File_id=File.id).values_list('receiver_id',flat=True)
-        user = User.objects.get(id=NUM_USERS)   #treat last user as server
+        server = User.objects.get(id=NUM_USERS)   #treat last user as server
         
         for email in data['email']:
             try:
@@ -335,7 +335,7 @@ def get_revoke_params(request):
                 'C1':File.C1,
                 't':File.t,
                 'revoke_list':id_list,
-                'publicKey':user.public_rsa
+                'publicKey':server.public_rsa
             }
         else:
             return_data={
@@ -357,6 +357,7 @@ def revoke_users(request):
     data = json.loads(request.body)
     try:
         File = FileDB.objects.get(filePath=data['ku']['filePath'],owner_id=data['owner'])   #File record to be updated
+        server = User.objects.get(id=NUM_USERS)
         
         url = "https://api-content.dropbox.com/1/files/auto"+File.filePath
         headers = {
@@ -377,12 +378,12 @@ def revoke_users(request):
                     handle.flush()
 
         #call the backend to update the contents
-        process = subprocess.check_output(BACKEND+"mainbgw revoke "+localFilePath+" "+str(data['ku']['k1']+" "+str(data['ku']['k1_new'])), shell=True,\
+        process = subprocess.check_output(BACKEND+"mainbgw revoke "+localFilePath+" "+data['ku']['k1']+" "+data['ku']['k1_new']+" \""+server.secret_rsa+"\"", shell=True,\
                                           stderr=subprocess.STDOUT)
         #update the file to dropbox
         upload_to_dropbox(File.filePath, localFilePath, data['access_token'])
 
-        # #update the file metadata in database
+        #update the file metadata in database
         File.C0 = data['ku']['C0']
         File.C1 = data['ku']['C1']
         File.OC1 = data['ku']['OC1']
@@ -417,4 +418,3 @@ def upload_to_dropbox(filePath, localFilePath, access_token):
         response = requests.put(url, headers=headers, data = content)
         if not response.ok:
             raise Exception("Upload error")
-        print "FILE UPLOADED"

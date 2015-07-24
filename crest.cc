@@ -150,6 +150,7 @@ class CrestInstance : public pp::Instance {
     }
     else if(action == "decryption")
     {
+      pp::VarDictionary reply;
       std::string OC0,OC1,C0,C1;
       pp::VarArrayBuffer buffer(dict_message.Get("content"));
       std::string rsa_key = dict_message.Get("secret_rsa").AsString();
@@ -181,10 +182,10 @@ class CrestInstance : public pp::Instance {
       buffer.Unmap();
       //aes decryption ends here
 
-      pp::VarDictionary reply;
       reply.Set("action","decryption");
       reply.Set("plaintext", (char*)plaintext);
       PostMessage(reply);
+
       free(plaintext);
       free(shared_users);
     }

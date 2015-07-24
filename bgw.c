@@ -25,8 +25,7 @@ void FreeGBP(global_broadcast_params_t gbp)
     printf("error: null pointer passed to freeGBP\n");
     return;
   }
-  
-  //do something about the pairing
+
   element_clear(gbp->g);
   element_clear(gbp->gamma);
   
@@ -39,42 +38,6 @@ void FreeGBP(global_broadcast_params_t gbp)
 }
 
 
-// void FreeBCS(broadcast_system_t bcs)
-// {
-//   if(!bcs) {
-//     printf("error: null pointer passed to freeBCS\n");
-//     return;
-//   }
-//   element_clear(bcs->encr_prod);
-//   element_clear(bcs->pub_key);
-//   element_clear(bcs->priv_key);
-//   return;
-// }
-
-// void FreePK(priv_key_t key)
-// {
-//   if(!key) {
-//     printf("error: null pointer passed to freePK\n");
-//     return;
-//   }
-//   element_clear(key->g_i_gamma);
-//   element_clear(key->g_i);
-//   element_clear(key->decr_prod);
-//   return;
-// }
-
-
-// static inline void out(element_t elem, FILE *myfile)
-// {
-//   int sz = element_length_in_bytes(elem);
-//   fwrite(&sz, 4, 1, myfile);
-//   unsigned char* data = pbc_malloc(sz);
-//   if(!data) printf("DATA IS NULL\n");
-//   element_to_bytes(data, elem);
-//   fwrite(data, sz, 1, myfile);
-//   pbc_free(data);
-// }
-
 static inline int in(element_t elem, unsigned char *my_feed) {
   int sz;
   // fprintf(stderr, "Prepare reading sz\n");
@@ -86,6 +49,7 @@ static inline int in(element_t elem, unsigned char *my_feed) {
   pbc_free(data);
   return sz+4;
 }
+
 
 //This function sets the global broadcast parameters downloaded as a file from the server
 //Sets up the gamma value, dont forget to randomize gamma and store locally later please
@@ -123,11 +87,12 @@ void setup_global_broadcast_params(global_broadcast_params_t *sys,
 
   element_init_Zr(gbs->gamma, gbs->pairing);  //initialise gamma
   element_random(gbs->gamma); //pick random value of gamma
-  //i=element_set_str(gbs->gamma, PRIVATE_GAMMA, PBC_CONVERT_BASE); //set a randomly picked gamma
 
   //For simplicity & so code was easy to read
   gbs->gs = lgs;
   *sys = gbs;
+
+  return;
 }
 
 //Called in file encryption function to generate C0,C1,C0',C1' and EK
@@ -178,4 +143,3 @@ void EK_CT_generate(char *gamma, int *shared_users, int num_users, unsigned char
 
   return;
 }
-

@@ -109,7 +109,6 @@ int aes_decrypt(const unsigned char *ciphertext, int ciphertext_len, unsigned ch
  */
 void shaCrypt(unsigned char *input, int length, const char *key, int keylen)
 {
-  //size_t keylen = strlen(key);
   int i, j, numOfChunks = (int)ceil((float)length/20.0);  //20 bytes is the length of sha1 hash
   char *sha_in = (char*)malloc((keylen+2)*sizeof(char));
   unsigned char *sha_out = (unsigned char*)malloc(20*sizeof(unsigned char));
@@ -191,6 +190,8 @@ int encrypt_file(unsigned char *pps, char* gamma, int *shared_users, int num_use
   //generate EK and CT
   EK_CT_generate(gamma, shared_users, num_users, pps, CT, EK, t);
 
+  element_printf("EK_enc: %B\n",EK);
+
   //extract EK in string
   element_snprint(ek,MAX_ELEMENT_LEN,EK);
 
@@ -214,7 +215,8 @@ int encrypt_file(unsigned char *pps, char* gamma, int *shared_users, int num_use
   get_text_from_ct(CT,CM);
 
   //free memory
-  pbc_free(CT);
+  free(ek);
+  FreeCT(CT);
 
   //return length of ciphertext
   return len;
@@ -240,6 +242,9 @@ void get_key_from_ct(global_broadcast_params_t gbs, ct CT, element_t sk_i, int u
   element_pairing(num0,gbs->gs[user_id-1],CT->OC1);
   element_pairing(denom0,sk_i,CT->OC0);
   element_div(EK0,num0,denom0);
+
+  element_printf("EK0_dec: %B\n",EK0);
+
   element_snprint(ek0,MAX_ELEMENT_LEN,EK0);
   strcat(ek0,"0");
   SHA1((unsigned char*)ek0,strlen(ek0),k0);
@@ -251,10 +256,20 @@ void get_key_from_ct(global_broadcast_params_t gbs, ct CT, element_t sk_i, int u
   element_pairing(num1,gbs->gs[user_id-1],CT->C1);
   element_pairing(denom1,sk_i,CT->C0);
   element_div(EK1,num1,denom1);
+
+  element_printf("EK1_dec: %B\n",EK1);
+
   element_snprint(ek1,MAX_ELEMENT_LEN,EK1);
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),k1);
 
+  //free all the memory consumed
+  element_clear(EK0);
+  element_clear(EK1);
+  element_clear(num0);
+  element_clear(num1);
+  element_clear(denom0);
+  element_clear(denom1);
   free(ek0);
   free(ek1);
   return;
@@ -279,7 +294,7 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   Base64Decode((char*)km, &enc_sk, &enc_sk_len);  //base64decoding of km
 
   //decrypt enc_sk to sk
-  sk = (unsigned char*)malloc(sizeof(unsigned char)*373); //3072 bits RSA encryption can give at max 373 bytes plaintext
+  sk = (unsigned char*)malloc(sizeof(unsigned char)*374); //3072 bits RSA encryption can give at max 373 bytes plaintext
   sk_len = private_decrypt(enc_sk,enc_sk_len,(unsigned char*)rsa_privateKey, sk);
   sk[sk_len]='\0';  //private decrypt doesn't appends with null char so we have to do that
 
@@ -287,9 +302,17 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   //done here instead of writing a separate function so as to save double work
   setup_global_broadcast_params(&gbs,pps);
   get_ct_from_text(gbs,CT,OC0,OC1,C0,C1);
+
   element_init_G1(sk_i, gbs->pairing);
   element_set_str(sk_i, (char*)sk, PBC_CONVERT_BASE);
   get_key_from_ct(gbs,CT,sk_i,user_id,shared_users,recipients,k0,k1);
+
+  //free some memory
+  free(enc_sk);
+  free(sk);
+  element_clear(sk_i);
+  FreeCT(CT);
+  FreeGBP(gbs);
 
   //outer layer decrypt
   shaCrypt(ciphertext, cipherlen, (const char*)k1, SHA_DIGEST_LENGTH);
@@ -298,8 +321,7 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   aes_init((const char*)k0, SHA_DIGEST_LENGTH, aes_key, iv);
   len = aes_decrypt(ciphertext, cipherlen, aes_key, iv, plaintext);
 
-  //free some memory
-  FreeCT(CT);
+  //free memory
   free(k0);
   free(k1);
   return len;
@@ -328,6 +350,9 @@ RSA * createRSA(unsigned char * key,int public)
     {
         fprintf(stdout, "Failed to create RSA\n");
     }
+
+    //free memory allocated to keybio
+    BIO_free_all(keybio);
  
     return rsa;
 }
@@ -336,12 +361,18 @@ int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsign
 {
     RSA * rsa = createRSA(key,1);
     int result = RSA_public_encrypt(data_len,data,encrypted,rsa,padding);
+    
+    //free the RSA structure
+    RSA_free(rsa);
     return result;
 }
 int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
 {
     RSA * rsa = createRSA(key,0);
     int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
+    
+    //free the rsa structure
+    RSA_free(rsa);
     return result;
 }
 
@@ -428,6 +459,9 @@ void Okeygen(unsigned char *pps, int num_users, char **public_keys, char **km, c
     len = public_encrypt((unsigned char*)sk,(int)strlen(sk),(unsigned char*)public_keys[i], (unsigned char*)temp);
     Base64Encode((unsigned char*)temp, len, &km[i]);
   }
+
+  //free memory
+  FreeGBP(gbs);
   free(temp);
   free(sk);
   return;
@@ -464,6 +498,7 @@ void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1,
   element_clear(OC1_new);
   element_clear(C1_new);
   element_clear(t);
+  FreeGBP(gbs);
 
   return;
 }
@@ -479,16 +514,21 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   unsigned char *temp_k1_new = (unsigned char*)malloc(SHA_DIGEST_LENGTH*sizeof(unsigned char*));
   unsigned char *temp = (unsigned char*)malloc(385*sizeof(unsigned char));
 
+  //setup the pps in gbs structure
   setup_global_broadcast_params(&gbs,pps);
 
+  //recover old t value for file
   element_init_Zr(t,gbs->pairing);
   element_set_str(t,t_str,PBC_CONVERT_BASE);
 
+  //recover the latest EK
   element_init(EK, gbs->pairing->GT);
   element_pairing(EK, gbs->gs[0],gbs->gs[gbs->num_users-1]);
   element_pow_zn(EK,EK,t);  //recovered the latest EK
+
+  element_printf("EK_rev: %B\n",EK);
   
-  //generate k1
+  //generate k1 for outer layer decryption by server
   ek1 = (char*)malloc(MAX_ELEMENT_LEN);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
   strcat(ek1,"1");
@@ -497,17 +537,23 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   Base64Encode(temp, len, k1);
   free(temp_k1);
 
+  //pick a random t'
   element_init_Zr(t_new,gbs->pairing);
   element_random(t_new);
-  element_snprint(t_new_str,MAX_ELEMENT_LEN,t_new);
   
-  //generate k1'
+  //generate k1' for outer layer encryption by server
   element_pow_zn(EK,EK,t_new);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
+
+  element_printf("EK_rev_new: %B\n",EK);
+
+  element_clear(EK);  //no longer needed so free the memory
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),temp_k1_new);
   len = public_encrypt(temp_k1_new,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp);
   Base64Encode(temp, len, k1_new);
+
+  //free some memory
   free(ek1);
   free(temp);
   free(temp_k1_new);
@@ -522,6 +568,7 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //C0 = (C0)^t'
   element_pow_zn(C0,C0,t_new);
   element_snprint(CM->C0,MAX_ELEMENT_LEN,C0);
+    element_clear(C0);
 
   //OC1'
   for(i=0;i<num_users;i++)
@@ -534,13 +581,18 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //C1'=(OC1)^t'
   element_pow_zn(C1,OC1,t_new);
   element_snprint(CM->C1,MAX_ELEMENT_LEN,C1);
-
-  element_clear(C0);
+  //free some memory
   element_clear(C1);
   element_clear(OC1);
+
+  //set the new value of t = t*t'
+  element_mul(t_new,t_new,t);
+  element_snprint(t_new_str,MAX_ELEMENT_LEN,t_new);
+
+  //free memory
   element_clear(t);
   element_clear(t_new);
-  element_clear(EK);
+  FreeGBP(gbs);
 
   return;
 }
