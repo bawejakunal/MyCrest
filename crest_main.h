@@ -51,6 +51,6 @@ int encrypt_file(unsigned char *pps, char* gamma, int *shared_users, int num_use
 
 int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, const char *OC0, const char* OC1, const char* C0, const char* C1, int user_id, int *shared_users, int recipients, const char *km, const char *rsa_privateKey,unsigned char* plaintext);
 
-void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1, char *C1, char *t_str, char *new_OC1, char *new_C1);
+void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1, char *C1, char *t_str, char *t_str_new, char *new_OC1, char *new_C1);
 
-void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str);
+void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_str_latest,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str);

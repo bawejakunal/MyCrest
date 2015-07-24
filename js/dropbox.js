@@ -638,6 +638,7 @@ function revokeUser()
                             C0: oReq.response.C0,
                             C1: oReq.response.C1,
                             t: oReq.response.t,
+                            t_new: oReq.response.t_new,
                             publicKey:oReq.response.publicKey,
                             revoke: oReq.response.revoke_list,
                             ppsParams: ppsParams,

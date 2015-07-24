@@ -135,7 +135,7 @@ def add_ube_keys(request):
 @csrf_exempt
 def upload_file_meta(request):
     data = json.loads(request.body)
-    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'])
+    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'],t_new=data['t'])
     file_meta.save()
 
     FileShare(File_id=file_meta.id,owner_id=data['owner'],receiver_id=data['owner']).save()  #add owner once and only once in shared table
@@ -267,6 +267,7 @@ def get_share_params(request):
             'OC1':File.OC1,
             'C1':File.C1,
             't':File.t,
+            't_new':File.t_new,
             'shared_users':id_list
         }
     except Exception as e:
@@ -334,6 +335,7 @@ def get_revoke_params(request):
                 'C0':File.C0,
                 'C1':File.C1,
                 't':File.t,
+                't_new':File.t_new,
                 'revoke_list':id_list,
                 'publicKey':server.public_rsa
             }
@@ -390,7 +392,7 @@ def revoke_users(request):
         File.C0 = data['ku']['C0']
         File.C1 = data['ku']['C1']
         File.OC1 = data['ku']['OC1']
-        File.t = data['ku']['t']
+        File.t_new = data['ku']['t']
         File.save()
 
         #remove the users from shared database

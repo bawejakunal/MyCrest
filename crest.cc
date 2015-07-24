@@ -199,11 +199,12 @@ class CrestInstance : public pp::Instance {
         return;
       unsigned char* pps = static_cast<unsigned char*>(pps_buffer.Map());
       
-      std:: string OC1,C1,gamma,t;
+      std:: string OC1,C1,gamma,t,t_new;
       OC1 = metadata.Get("OC1").AsString();
       C1 = metadata.Get("C1").AsString();
       gamma = metadata.Get("gamma").AsString();
       t = metadata.Get("t").AsString();
+      t_new = metadata.Get("t_new").AsString();
       
       pp::VarArray shared(metadata.Get("shared_users"));
       int i,num_users = shared.GetLength();
@@ -214,7 +215,7 @@ class CrestInstance : public pp::Instance {
       for(i=0;i<num_users;i++)
         shared_users[i] = shared.Get(i).AsInt();
       
-      share_file(pps, shared_users, num_users, (char*)OC1.c_str(), (char*)C1.c_str(), (char*)t.c_str(), OC1_new, C1_new);
+      share_file(pps, shared_users, num_users, (char*)OC1.c_str(), (char*)C1.c_str(), (char*)t.c_str(), (char*)t_new.c_str(), OC1_new, C1_new);
 
       reply.Set("action","share");
       reply.Set("OC1",OC1_new);
@@ -232,12 +233,13 @@ class CrestInstance : public pp::Instance {
     else if (action=="revoke")
     {
       pp::VarDictionary reply;
-      std::string OC0,OC1,C0,C1,t,publicKey;
+      std::string OC0,OC1,C0,C1,t,t_new,publicKey;
       OC0 = dict_message.Get("OC0").AsString();
       OC1 = dict_message.Get("OC1").AsString();
       C0 = dict_message.Get("C0").AsString();
       C1 = dict_message.Get("C1").AsString();
       t = dict_message.Get("t").AsString();
+      t_new = dict_message.Get("t_new").AsString();
       publicKey = dict_message.Get("publicKey").AsString();
       pp::VarArrayBuffer pps_buffer(dict_message.Get("ppsParams"));
       if (pps_buffer.ByteLength() == 0)
@@ -266,7 +268,7 @@ class CrestInstance : public pp::Instance {
       k1 = (char**)malloc(sizeof(char*));
       k1_new = (char**)malloc(sizeof(char*));
 
-      revokeUser(pps,CM,t.c_str(),publicKey.c_str(),revoke_list,num_users,k1,k1_new,t_str);
+      revokeUser(pps,CM,t.c_str(),t_new.c_str(),publicKey.c_str(),revoke_list,num_users,k1,k1_new,t_str);
 
       reply.Set("action","revoke");
       reply.Set("revoke",revoke);

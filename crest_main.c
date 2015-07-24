@@ -241,8 +241,6 @@ void get_key_from_ct(global_broadcast_params_t gbs, ct CT, element_t sk_i, int u
   element_pairing(denom0,sk_i,CT->OC0);
   element_div(EK0,num0,denom0);
 
-  element_printf("EK0_dec: %B\n",EK0);
-
   element_snprint(ek0,MAX_ELEMENT_LEN,EK0);
   strcat(ek0,"0");
   SHA1((unsigned char*)ek0,strlen(ek0),k0);
@@ -468,27 +466,32 @@ void Okeygen(unsigned char *pps, int num_users, char **public_keys, char **km, c
 
 //Generate new values for OC1 and C1 for ciphertext update
 //this is to add user to list of shared users
-void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1, char *C1, char *t_str, char *new_OC1, char *new_C1)
+void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1, char *C1, char *t_str, char *t_str_new, char *new_OC1, char *new_C1)
 {
   int i;
   global_broadcast_params_t gbs;
-  element_t OC1_new,C1_new,t;
+  element_t OC1_new,C1_new,t,t_new,temp;
 
   setup_global_broadcast_params(&gbs,pps);  //dont use gamma, its randomly generated and not user's unique value here
 
   element_init(OC1_new,gbs->pairing->G1);
   element_init(C1_new,gbs->pairing->G1);
+  element_init(temp,gbs->pairing->G1);
   element_init_Zr(t, gbs->pairing);
+  element_init_Zr(t_new, gbs->pairing);
 
   element_set_str(OC1_new,OC1,PBC_CONVERT_BASE);
   element_set_str(C1_new,C1,PBC_CONVERT_BASE);
   element_set_str(t,t_str,PBC_CONVERT_BASE);
+  element_set_str(t_new,t_str_new,PBC_CONVERT_BASE);
 
   for(i=0;i<num_users;i++)
   {
-    element_pow_zn(gbs->gs[(gbs->num_users)-shared_users[i]], gbs->gs[(gbs->num_users)-shared_users[i]], t);
-    element_mul(OC1_new, OC1_new, gbs->gs[(gbs->num_users)-shared_users[i]]); //multiply to oc1
-    element_mul(C1_new, C1_new, gbs->gs[(gbs->num_users)-shared_users[i]]); //multiply to c1
+    element_pow_zn(temp, gbs->gs[(gbs->num_users)-shared_users[i]], t);
+    element_mul(OC1_new, OC1_new, temp); //multiply to oc1
+
+    element_pow_zn(temp, gbs->gs[(gbs->num_users)-shared_users[i]], t_new);
+    element_mul(C1_new, C1_new, temp); //multiply to c1
   }
 
   element_snprint(new_OC1,MAX_ELEMENT_LEN,OC1_new);
@@ -498,15 +501,18 @@ void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1,
   element_clear(OC1_new);
   element_clear(C1_new);
   element_clear(t);
+  element_clear(t_new);
+  element_clear(temp);
   FreeGBP(gbs);
 
   return;
 }
 
-void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str)
+//FUNCTION TO REVOKE A LIST OF USERS FROM THE SHARED USERS
+void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_str_latest,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str)
 {
   
-  element_t C0,OC1,C1,t,EK,t_new;
+  element_t C0,OC1,C1,t,EK,t_new,t_latest;
   global_broadcast_params_t gbs;
   char *ek1;
   int len,i;
@@ -517,14 +523,18 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //setup the pps in gbs structure
   setup_global_broadcast_params(&gbs,pps);
 
-  //recover old t value for file
+  //recover latest value of t i.e t_latest
+  element_init_Zr(t_latest,gbs->pairing);
+  element_set_str(t_latest,t_str_latest,PBC_CONVERT_BASE);
+
+  //recover original t value for file
   element_init_Zr(t,gbs->pairing);
   element_set_str(t,t_str,PBC_CONVERT_BASE);
 
   //recover the latest EK
   element_init(EK, gbs->pairing->GT);
   element_pairing(EK, gbs->gs[0],gbs->gs[gbs->num_users-1]);
-  element_pow_zn(EK,EK,t);  //recovered the latest EK
+  element_pow_zn(EK,EK,t_latest);  //recovered the latest EK
   
   //generate k1 for outer layer decryption by server
   ek1 = (char*)malloc(MAX_ELEMENT_LEN);
@@ -542,6 +552,9 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //generate k1' for outer layer encryption by server
   element_pow_zn(EK,EK,t_new);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
+
+  printf("EK_new: %s\n", ek1);
+
   element_clear(EK);  //no longer needed so free the memory
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),temp_k1_new);
@@ -563,9 +576,9 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //C0 = (C0)^t'
   element_pow_zn(C0,C0,t_new);
   element_snprint(CM->C0,MAX_ELEMENT_LEN,C0);
-    element_clear(C0);
+  element_clear(C0);
 
-  //OC1'
+  //OC1 update for inner layer encryption, hence original t value used
   for(i=0;i<num_users;i++)
   {
     element_pow_zn(gbs->gs[(gbs->num_users)-revoke[i]],gbs->gs[(gbs->num_users)-revoke[i]],t);
