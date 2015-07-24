@@ -190,8 +190,6 @@ int encrypt_file(unsigned char *pps, char* gamma, int *shared_users, int num_use
   //generate EK and CT
   EK_CT_generate(gamma, shared_users, num_users, pps, CT, EK, t);
 
-  element_printf("EK_enc: %B\n",EK);
-
   //extract EK in string
   element_snprint(ek,MAX_ELEMENT_LEN,EK);
 
@@ -324,6 +322,7 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   //free memory
   free(k0);
   free(k1);
+
   return len;
 }
 
@@ -468,6 +467,7 @@ void Okeygen(unsigned char *pps, int num_users, char **public_keys, char **km, c
 }
 
 //Generate new values for OC1 and C1 for ciphertext update
+//this is to add user to list of shared users
 void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1, char *C1, char *t_str, char *new_OC1, char *new_C1)
 {
   int i;
@@ -525,8 +525,6 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   element_init(EK, gbs->pairing->GT);
   element_pairing(EK, gbs->gs[0],gbs->gs[gbs->num_users-1]);
   element_pow_zn(EK,EK,t);  //recovered the latest EK
-
-  element_printf("EK_rev: %B\n",EK);
   
   //generate k1 for outer layer decryption by server
   ek1 = (char*)malloc(MAX_ELEMENT_LEN);
@@ -544,9 +542,6 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   //generate k1' for outer layer encryption by server
   element_pow_zn(EK,EK,t_new);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
-
-  element_printf("EK_rev_new: %B\n",EK);
-
   element_clear(EK);  //no longer needed so free the memory
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),temp_k1_new);
@@ -586,7 +581,7 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char *pub
   element_clear(OC1);
 
   //set the new value of t = t*t'
-  element_mul(t_new,t_new,t);
+  element_mul_zn(t_new,t_new,t);
   element_snprint(t_new_str,MAX_ELEMENT_LEN,t_new);
 
   //free memory

@@ -153,8 +153,10 @@ void shaCrypt(unsigned char *input, int length, const char *key, int keylen)
 {
   //size_t keylen = strlen(key);
   int i, j, numOfChunks = (int)ceil((float)length/20.0);  //20 bytes is the length of sha1 hash
-  char *sha_in = (char*)malloc((keylen+2)*sizeof(char));
-  unsigned char *sha_out = (unsigned char*)malloc(20*sizeof(unsigned char));
+  char *sha_in = NULL;
+  sha_in = (char*)malloc((keylen+2)*sizeof(char));
+  unsigned char *sha_out = NULL;
+  sha_out = (unsigned char*)malloc(20*sizeof(unsigned char));
   char a[2];
   strncpy(sha_in,key,(size_t)keylen);
   sha_in[keylen]='\0';
@@ -204,6 +206,9 @@ RSA * createRSA(unsigned char * key,int public)
     {
         fprintf(stdout, "Failed to create RSA\n");
     }
+
+    //free memory allocated to keybio
+    BIO_free_all(keybio);
  
     return rsa;
 }
@@ -212,12 +217,18 @@ int public_encrypt(unsigned char * data,int data_len,unsigned char * key, unsign
 {
     RSA * rsa = createRSA(key,1);
     int result = RSA_public_encrypt(data_len,data,encrypted,rsa,padding);
+    
+    //free the RSA structure
+    RSA_free(rsa);
     return result;
 }
 int private_decrypt(unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted)
 {
     RSA * rsa = createRSA(key,0);
     int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
+    
+    //free the rsa structure
+    RSA_free(rsa);
     return result;
 }
 
@@ -226,9 +237,7 @@ int update_encryption(char *fileName, char *base_k1, char *base_k1_new, const ch
 {
   FILE *file;
   size_t cipherlen,keylen;
-  unsigned char *ciphertext,*k1_temp,*k1_new_temp,*k1,*k1_new;
-
-  printf("%s\n", privateKey);
+  unsigned char *ciphertext=NULL,*k1_temp,*k1_new_temp,*k1,*k1_new;
 
   //read ciphertext from the file to be updated
   file = fopen(fileName,"rb");  //open in read binary stream mode
@@ -241,51 +250,82 @@ int update_encryption(char *fileName, char *base_k1, char *base_k1_new, const ch
     if (ciphertext)
     {
       fread (ciphertext, sizeof(unsigned char), cipherlen, file);
+      fclose (file);
     }
-    fclose (file);
-  }
+    else{
+      free(ciphertext);
+      fclose(file);
+      return 1;
+    }
 
-  //decrypt the data
-  if(!Base64Decode(base_k1, &k1_temp, &keylen))
-  {
-    k1 = (unsigned char*)malloc(sizeof(unsigned char)*374);
-    keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1);
-    k1[keylen]='\0';
-    shaCrypt(ciphertext,(int)cipherlen, (const char *)k1, SHA_DIGEST_LENGTH);
-    free(k1_temp);
-    free(k1);
+    //decrypt the data
+    if(!Base64Decode(base_k1, &k1_temp, &keylen))
+    {
+      k1 = (unsigned char*)malloc(sizeof(unsigned char)*374);
+      if(k1)
+      {
+        keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1);
+        k1[keylen]='\0';
+        shaCrypt(ciphertext,(int)cipherlen, (const char *)k1, keylen);
+        free(k1_temp);
+        free(k1);
+      }
+      else
+      {
+        free(k1_temp);
+        free(ciphertext);
+        return 1;
+      }
+    }
+    else
+    {
+      free(ciphertext);
+      return 1;
+    }
+
+      //re-encrypt the data
+    if(!Base64Decode(base_k1_new,&k1_new_temp,&keylen))
+    {
+      k1_new = (unsigned char*)malloc(sizeof(unsigned char)*374);
+      if(k1_new)
+      {
+        keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1_new);
+        k1_new[keylen]='\0';
+        shaCrypt(ciphertext,(int)cipherlen,(const char*)k1_new, keylen);
+        free(k1_new_temp);
+        free(k1_new);
+      }
+      else
+      {
+        free(ciphertext);
+        return 1;
+      }
+    }
+    else
+    {
+      free(ciphertext);
+      return 1;
+    }
+
+    //write the encrypted data to file
+    file = fopen(fileName,"wb");
+    if (file)
+    {
+      fwrite(ciphertext, sizeof(unsigned char), cipherlen, file);
+      fclose(file);
+      //free memory for ciphertext
+      free(ciphertext);
+      return 0;
+    }
+    else
+    {
+      free(ciphertext);
+      return 1;
+    }
   }
   else
-    return 1;
-
-  //re-encrypt the data
-  if(!Base64Decode(base_k1_new,&k1_new_temp,&keylen))
   {
-    k1_new = (unsigned char*)malloc(sizeof(unsigned char)*374);
-    keylen = private_decrypt(k1_temp,keylen,(unsigned char *)privateKey, k1_new);
-    k1_new[keylen]='\0';
-    shaCrypt(ciphertext,(int)cipherlen,(const char*)k1_new, SHA_DIGEST_LENGTH);
-    free(k1_new_temp);
-    free(k1_new);
-  }
-  else
+    printf("FILE NOT OPENED\n");
     return 1;
-
-  //write the encrypted data to file
-  file = fopen(fileName,"wb");
-  if (file)
-  {
-    fwrite(ciphertext, sizeof(unsigned char), cipherlen, file);
-    fclose(file);
   }
-  else
-    return 1;
-
-  file = fopen("yolo.txt","w");
-  fprintf(file, "HELLO WORLD\n");
-  fclose(file);
-
-  //free memory for ciphertext
-  free(ciphertext);
-  return 0;
 }

@@ -380,6 +380,9 @@ def revoke_users(request):
         #call the backend to update the contents
         process = subprocess.check_output(BACKEND+"mainbgw revoke "+localFilePath+" "+data['ku']['k1']+" "+data['ku']['k1_new']+" \""+server.secret_rsa+"\"", shell=True,\
                                           stderr=subprocess.STDOUT)
+        
+        print (process)
+
         #update the file to dropbox
         upload_to_dropbox(File.filePath, localFilePath, data['access_token'])
 
