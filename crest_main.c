@@ -253,8 +253,6 @@ void get_key_from_ct(global_broadcast_params_t gbs, ct CT, element_t sk_i, int u
   element_pairing(denom1,sk_i,CT->C0);
   element_div(EK1,num1,denom1);
 
-  element_printf("EK1_dec: %B\n",EK1);
-
   element_snprint(ek1,MAX_ELEMENT_LEN,EK1);
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),k1);
@@ -298,6 +296,8 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   //done here instead of writing a separate function so as to save double work
   setup_global_broadcast_params(&gbs,pps);
   get_ct_from_text(gbs,CT,OC0,OC1,C0,C1);
+
+  printf("%s\n%s\n%s\n%s\n",OC0,OC1,C0,C1);
 
   element_init_G1(sk_i, gbs->pairing);
   element_set_str(sk_i, (char*)sk, PBC_CONVERT_BASE);
@@ -512,13 +512,13 @@ void share_file(unsigned char* pps, int *shared_users, int num_users, char *OC1,
 void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_str_latest,const char *publicKey, int* revoke, int num_users, char **k1, char **k1_new, char* t_new_str)
 {
   
-  element_t C0,OC1,C1,t,EK,t_new,t_latest;
+  element_t C0,OC1,C1,t,EK,t_new,t_latest,temp;
   global_broadcast_params_t gbs;
   char *ek1;
   int len,i;
   unsigned char *temp_k1 = (unsigned char*)malloc(SHA_DIGEST_LENGTH*sizeof(unsigned char*));
   unsigned char *temp_k1_new = (unsigned char*)malloc(SHA_DIGEST_LENGTH*sizeof(unsigned char*));
-  unsigned char *temp = (unsigned char*)malloc(385*sizeof(unsigned char));
+  unsigned char *temp_key = (unsigned char*)malloc(385*sizeof(unsigned char));
 
   //setup the pps in gbs structure
   setup_global_broadcast_params(&gbs,pps);
@@ -539,10 +539,11 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_s
   //generate k1 for outer layer decryption by server
   ek1 = (char*)malloc(MAX_ELEMENT_LEN);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
+
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),temp_k1);
-  len = public_encrypt(temp_k1,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp);
-  Base64Encode(temp, len, k1);
+  len = public_encrypt(temp_k1,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp_key);
+  Base64Encode(temp_key, len, k1);
   free(temp_k1);
 
   //pick a random t'
@@ -553,22 +554,21 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_s
   element_pow_zn(EK,EK,t_new);
   element_snprint(ek1,MAX_ELEMENT_LEN,EK);
 
-  printf("EK_new: %s\n", ek1);
-
   element_clear(EK);  //no longer needed so free the memory
   strcat(ek1,"1");
   SHA1((unsigned char*)ek1,strlen(ek1),temp_k1_new);
-  len = public_encrypt(temp_k1_new,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp);
-  Base64Encode(temp, len, k1_new);
+  len = public_encrypt(temp_k1_new,SHA_DIGEST_LENGTH,(unsigned char*)publicKey,temp_key);
+  Base64Encode(temp_key, len, k1_new);
 
   //free some memory
   free(ek1);
-  free(temp);
+  free(temp_key);
   free(temp_k1_new);
 
   element_init(C0,gbs->pairing->G1);
   element_init(C1,gbs->pairing->G1);
   element_init(OC1,gbs->pairing->G1);
+  element_init(temp,gbs->pairing->G1);
   element_set_str(C0,CM->C0,PBC_CONVERT_BASE);
   element_set_str(C1,CM->C1,PBC_CONVERT_BASE);
   element_set_str(OC1,CM->OC1,PBC_CONVERT_BASE);
@@ -578,28 +578,35 @@ void revokeUser(unsigned char* pps, ct_text CM,const char* t_str,const char* t_s
   element_snprint(CM->C0,MAX_ELEMENT_LEN,C0);
   element_clear(C0);
 
-  //OC1 update for inner layer encryption, hence original t value used
+  //OC1 and C1 updates respectively
   for(i=0;i<num_users;i++)
   {
-    element_pow_zn(gbs->gs[(gbs->num_users)-revoke[i]],gbs->gs[(gbs->num_users)-revoke[i]],t);
-    element_div(OC1,OC1,gbs->gs[(gbs->num_users)-revoke[i]]);
+    element_pow_zn(temp,gbs->gs[(gbs->num_users)-revoke[i]],t);
+    element_div(OC1,OC1,temp);
+
+    //C1 update
+    element_pow_zn(temp,gbs->gs[(gbs->num_users)-revoke[i]],t_latest);
+    element_div(C1,C1,temp);
   }
   element_snprint(CM->OC1,MAX_ELEMENT_LEN,OC1);
 
-  //C1'=(OC1)^t'
-  element_pow_zn(C1,OC1,t_new);
+  //C1'=(C1)^t'
+  element_pow_zn(C1,C1,t_new);
   element_snprint(CM->C1,MAX_ELEMENT_LEN,C1);
+  
   //free some memory
   element_clear(C1);
   element_clear(OC1);
+  element_clear(temp);
 
-  //set the new value of t = t*t'
-  element_mul_zn(t_new,t_new,t);
+  //set the new value of t = t_latest*t'
+  element_mul_zn(t_new,t_new,t_latest);
   element_snprint(t_new_str,MAX_ELEMENT_LEN,t_new);
 
   //free memory
   element_clear(t);
   element_clear(t_new);
+  element_clear(t_latest);
   FreeGBP(gbs);
 
   return;
