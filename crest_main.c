@@ -297,8 +297,6 @@ int decrypt_file(unsigned char *ciphertext, int cipherlen, unsigned char* pps, c
   setup_global_broadcast_params(&gbs,pps);
   get_ct_from_text(gbs,CT,OC0,OC1,C0,C1);
 
-  printf("%s\n%s\n%s\n%s\n",OC0,OC1,C0,C1);
-
   element_init_G1(sk_i, gbs->pairing);
   element_set_str(sk_i, (char*)sk, PBC_CONVERT_BASE);
   get_key_from_ct(gbs,CT,sk_i,user_id,shared_users,recipients,k0,k1);
