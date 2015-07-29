@@ -13,6 +13,7 @@
   },
 
   "permissions": [
+    "http://172.28.181.85/crest/*",
     "http://127.0.0.1:8000/crest/*",
     "https://www.dropbox.com/*",
     "https://api.dropbox.com/*",
