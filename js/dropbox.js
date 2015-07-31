@@ -301,25 +301,41 @@ function startUpload()
     });
 }
 
-//complete upload of data on receiving encrypted text from NaCl module
-//function completeUpload(filepath,data,contentLength,contentType)
-function completeUpload(message)
+
+//get shareable link of file
+function get_share_link(filePath,callback)
 {
-    var view = new Uint8Array(message.data);
-    var ciphertext = String.fromCharCode.apply(null,view);
+    var url = "https://api.dropbox.com/1/shares/auto"+filePath+"?short_url=false";
+    var args = {
+        headers:{
+                    Authorization: 'Bearer '+getAccessToken()
+        },
+        url: url,
+        crossDomain: true,
+        crossOrigin: true,
+        contentType: 'application/x-www-form-urlencoded',
+        type: 'POST',
+        dataType: 'json',
+        success: function (data) {
+            //console.log(data.url.replace('dl=0','raw=1'));
+            callback(data.url.replace('dl=0','raw=1'));
+        }
+    };
+    $.ajax(args);
+}
 
-    uploadFile(message.filePath, message.ciphertext, message.fileSize, message.fileType);
-    
-    var control = $("#upload_file");
-    control.replaceWith( control = control.clone( true ));
 
+//upload file metadata on server
+function uploadFileMeta(filePath,user_id,CT,shared_users,t,url)
+{
     //once we have successfully uploaded file on dropbox we need to upload metadata on cloud server as well
     var data = {
-        "filePath":message.filePath,
+        "filePath":filePath,
         "owner":user_id,
-        "CT":message.CT,
-        "shared":message.shared_users,
-        "t":message.t
+        "CT":CT,
+        "shared":shared_users,
+        "t":t,
+        "shared_url":url
     };
     var oReq = new XMLHttpRequest();
     oReq.open("POST",CLOUD_SERVER+'upload_file_meta',true);
@@ -329,11 +345,24 @@ function completeUpload(message)
         if(oReq.response.success)
             console.log("File metadata uploaded successfully.");
     };
-    oReq.send(JSON.stringify(data));
+    oReq.send(JSON.stringify(data));   
+}
+
+//complete upload of data on receiving encrypted text from NaCl module
+//function completeUpload(filepath,data,contentLength,contentType)
+function completeUpload(message)
+{
+    var view = new Uint8Array(message.data);
+    var ciphertext = String.fromCharCode.apply(null,view);
+
+    uploadFile(message.filePath, message.ciphertext, message.fileSize, message.fileType,message.CT,message.shared_users,message.t,get_share_link);
+    
+    var control = $("#upload_file");
+    control.replaceWith( control = control.clone( true ));
 }
 
 //function to upload file to folder
-function uploadFile(filepath,data,contentLength,contentType){
+function uploadFile(filepath,data,contentLength,contentType,CT,shared_users,t,callback){
     var url = "https://api-content.dropbox.com/1/files_put/auto"+filepath;
     var headers = {
         Authorization: 'Bearer ' + getAccessToken(),
@@ -352,6 +381,10 @@ function uploadFile(filepath,data,contentLength,contentType){
         success: function(data)
         {
             getMetadata(filepath.substring(0, filepath.lastIndexOf("/")+1),createFolderViews);
+            if(callback)
+                callback(filepath,function(url){
+                    uploadFileMeta(filepath,user_id,CT,shared_users,t,url);
+                });
         },
         error: function(jqXHR)
         {
@@ -514,22 +547,6 @@ function check_add_user()
 //Start sharing with more users
 function shareFile(){
     var filePath = $(this).closest('tr').attr('path');
-    // var url = "https://api.dropbox.com/1/shares/auto"+filePath;
-    // var oReq = new XMLHttpRequest();
-    // oReq.open("POST",url,true);
-    // oReq.responseType = "json"
-    // oReq.setRequestHeader("Authorization",'Bearer '+getAccessToken());
-    // oReq.onload = function(oEvent){
-    //     url = oReq.response.url;
-    //     console.log(url);
-    //     oReq.open("GET",url,true);
-    //     oReq.setRequestHeader('Access-Control-Allow-Headers', '*');
-    //     oReq.onload = function(oEvent){
-    //         console.log(oReq.response);
-    //     }
-    //     oReq.send(null);
-    // };
-    // oReq.send(null);
 
     $("#emailModal").modal({backdrop: 'static'});
 
@@ -561,11 +578,15 @@ function shareFile(){
                 {
                     if(oReq.response.shared_users.length>0)
                     {
-                        get_pps_params(function(ppsParams){
-                            common.naclModule.postMessage({
-                                action: 'share',
-                                ppsParams: ppsParams,
-                                metadata: oReq.response
+                        get_share_link(filePath,function(url){
+                            get_pps_params(function(ppsParams)
+                            {
+                                common.naclModule.postMessage({
+                                    action: 'share',
+                                    ppsParams: ppsParams,
+                                    metadata: oReq.response,
+                                    shared_url: url
+                                });
                             });
                         });
                     }

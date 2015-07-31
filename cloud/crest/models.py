@@ -38,7 +38,8 @@ class FileDB(models.Model):
     OC0 = models.CharField("Original Public header C0", max_length=MAX_ELEMENT_LEN)
     OC1 = models.CharField("Original Public header C1", max_length=MAX_ELEMENT_LEN)
     t = models.CharField("t for file", max_length=MAX_ELEMENT_LEN);
-    t_new = models.CharField("new t for file", max_length=MAX_ELEMENT_LEN, null=True);
+    t_new = models.CharField("new t for file", max_length=MAX_ELEMENT_LEN, null=True)
+    shared_url = models.CharField("shared_url", max_length=MAX_ELEMENT_LEN,null=True)
 
     class Meta:
         unique_together = ('filePath', 'owner')

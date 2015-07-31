@@ -135,7 +135,7 @@ def add_ube_keys(request):
 @csrf_exempt
 def upload_file_meta(request):
     data = json.loads(request.body)
-    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'],t_new=data['t'])
+    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'],t_new=data['t'],shared_url=data['shared_url'])
     file_meta.save()
 
     FileShare(File_id=file_meta.id,owner_id=data['owner'],receiver_id=data['owner']).save()  #add owner once and only once in shared table
@@ -288,6 +288,7 @@ def complete_file_share(request):
         File = FileDB.objects.get(id=data['File_id'])
         File.OC1 = data['OC1']
         File.C1 = data['C1']
+        File.shared_url = data['shared_url']
         File.save()
         for receiver in data['shared_users']:
             try:

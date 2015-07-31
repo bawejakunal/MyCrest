@@ -222,6 +222,7 @@ class CrestInstance : public pp::Instance {
       reply.Set("C1",C1_new);
       reply.Set("shared_users",shared);
       reply.Set("File_id",metadata.Get("fileId").AsInt());
+      reply.Set("shared_url",dict_message.Get("shared_url").AsString());
       PostMessage(reply);
 
       //free memory allocated
