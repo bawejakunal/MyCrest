@@ -35,6 +35,7 @@ $(document).ready(function()
 
     $(document).on("click",'.share', shareFile);
     $(document).on("click", '.download', downloadFile);
+    $(document).on("click",'.downloadShared',downloadSharedFile);
     $(document).on('click', '.folder', openFolder);
     $(document).on("click", ".delete", deleteFile);
     $(document).on("click", ".revoke", revokeUser);
@@ -142,6 +143,33 @@ function getMetadata(path,callback){
     $.ajax(args);
 }
 
+//populates view with the shared files
+function createSharedView()
+{
+    var oReq = new XMLHttpRequest();
+    oReq.open("POST", CLOUD_SERVER+"get_shared_files",true);
+    oReq.responseType ='json';
+    oReq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    oReq.onload = function(oEvent){
+        if (oReq.response.success)
+        {
+            var table = "<table id='shared_files' class='table table-striped table-hover'><thead><th>Shared Files:</th><th></th></thead><tbody>";
+            var tr;
+            for(var i in oReq.response.shared_files)
+            {
+                tr = "<tr path='" + oReq.response.shared_files[i] + "'>";
+                tr += "<td>"+oReq.response.shared_files[i].substring(oReq.response.shared_files[i].lastIndexOf('/')+1,oReq.response.shared_files[i].indexOf('?'))+"</td><td><button class='btn btn-primary downloadShared'>Download</button></td>"
+                table += tr;
+            }
+            table += "</tbody></table>";
+            $("#id_content").append(table);
+        }
+        else
+            console.log(oReq.response);
+    };
+    oReq.send(user_email);
+}
+
 //populates view with the contents of the folder opened
 function createFolderViews(metadata){
     var path;
@@ -159,8 +187,8 @@ function createFolderViews(metadata){
             tr += path.split('/').pop() + "</td><td><button class='btn btn-warning folder'>Open Folder</button></td><td></td>" + "</tr>";
         }
         else{
-            tr = "<tr path='" + path + "'><td>";
-            tr += path.split('/').pop() + "</td><td><button class='btn btn-primary download'>Download</button></td>"
+            tr = "<tr path='" + path + "'>";
+            tr += "<td>"+path.split('/').pop() + "</td><td><button class='btn btn-primary download'>Download</button></td>"
             tr += "<td><button class='btn btn-warning share'>Share</button></td>"
             tr += "<td><button class='btn btn-info revoke'>Revoke</button></td>"
             tr += "<td><button class='btn btn-danger delete'>Delete</button></td></tr>";
@@ -169,6 +197,8 @@ function createFolderViews(metadata){
     }
     table += "</tbody></table>";
     $("#id_content").html(table);
+
+    createSharedView();
 }
 
 //function to open the folder by getting metadata
@@ -693,4 +723,10 @@ function completeUserRevoke(data)
         console.log(oReq.response);
     };
     oReq.send(JSON.stringify(request_data));
+}
+
+
+function downloadSharedFile()
+{
+    console.log("IMPLEMENT THIS ASAP");
 }

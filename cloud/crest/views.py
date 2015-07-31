@@ -424,3 +424,25 @@ def upload_to_dropbox(filePath, localFilePath, access_token):
         response = requests.put(url, headers=headers, data = content)
         if not response.ok:
             raise Exception("Upload error")
+
+
+@csrf_exempt
+def get_shared_files(request):
+    email = request.body
+    file_list = []
+    try:
+        user = User.objects.get(email=email)
+        shared_files = FileShare.objects.filter(receiver_id=user.id).exclude(owner_id=user.id).values_list('File_id',flat=True)
+        for s in shared_files:
+            File = FileDB.objects.get(id=s)
+            file_list.append(File.shared_url)
+        return_data={
+            'success':True,
+            'shared_files':file_list
+        }
+    except Exception as e:
+        return_data={
+            'success':False,
+            'description':str(e)
+        }
+    return HttpResponse(json.dumps(return_data), content_type='application/json')
