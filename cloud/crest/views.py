@@ -156,9 +156,14 @@ def download_file_meta(request):
     data = json.loads(request.body)
     id_list = []
     try:
-        File = FileDB.objects.get(filePath=data['filePath'],owner_id=data['owner'])
-        user = User.objects.get(id=data['owner'])   #change this later because right now only owner can decrypt contents
-        recipient = Recipient.objects.get(owner_id=data['owner'],receiver_id=data['owner'])
+        if 'owner' in data:
+            File = FileDB.objects.get(filePath=data['filePath'],owner_id=data['owner'])
+            user = User.objects.get(id=data['owner'])
+            recipient = Recipient.objects.get(owner_id=data['owner'],receiver_id=data['owner'])
+        elif 'receiver' in data:
+            File = FileDB.objects.get(shared_url=data['shared_url'])
+            user = User.objects.get(id=data['receiver'])
+            recipient = Recipient.objects.get(owner_id=File.owner_id,receiver_id=data['receiver'])
         file_share = FileShare.objects.filter(File_id=File.id)
         for i in file_share:
             id_list.append(i.receiver_id)

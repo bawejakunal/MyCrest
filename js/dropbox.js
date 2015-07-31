@@ -219,48 +219,47 @@ function downloadFile(){
     var auth = 'Bearer '+getAccessToken();
     oReq.setRequestHeader("Authorization",auth);
     oReq.onload = function(oEvent){
-            var metadata = $.parseJSON(this.getResponseHeader('x-dropbox-metadata'));
-            var enc_content = this.response;
-            
-            //if downloaded encrypted file with .crest extension from dropbox then decrypt by downloading metadata from server
-            if(metadata.path.split('.').pop()=='crest')
+        var metadata = $.parseJSON(this.getResponseHeader('x-dropbox-metadata'));
+        var enc_content = this.response;
+        
+        //if downloaded encrypted file with .crest extension from dropbox then decrypt by downloading metadata from server
+        if(metadata.path.split('.').pop()=='crest')
+        {
+            //Downloading metadata from server
+            var oReq = new XMLHttpRequest();
+            var request_data ={
+                "filePath":filePath,
+                "owner":user_id,
+            };
+            oReq.open("POST",CLOUD_SERVER+'download_file_meta', true);
+            oReq.responseType = "json";
+            oReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            oReq.onload = function(oEvent)
             {
-                //Downloading metadata from server
-                var oReq = new XMLHttpRequest();
-                var request_data ={
-                    "filePath":filePath,
-                    "owner":user_id,
-                };
-                oReq.open("POST",CLOUD_SERVER+'download_file_meta', true);
-                oReq.responseType = "json";
-                oReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                oReq.onload = function(oEvent)
+                //on receiving metadata send contents for decryption
+                if(oReq.response.success)
                 {
-                    //on receiving metadata send contents for decryption
-                    var len = enc_content.byteLength;
-                    if(oReq.response.success)
-                    {
-                        get_pps_params(function(ppsParams){
-                            common.naclModule.postMessage({ action: "decryption",
-                                content: enc_content,
-                                CT: oReq.response.CT,
-                                km: oReq.response.km,
-                                secret_rsa: oReq.response.secret_rsa,
-                                ppsParams: ppsParams,
-                                user_id: user_id,
-                                shared_users: oReq.response.shared_users
-                             });
-                        });
-                    }
-                    else
-                        alert('File Data not found on server!!');
-                };
-                oReq.send(JSON.stringify(request_data));
-            }
-            else
-                console.log(String.fromCharCode.apply(null, new Uint8Array(enc_content)));
-        };
-        oReq.send(null);
+                    get_pps_params(function(ppsParams){
+                        common.naclModule.postMessage({ action: "decryption",
+                            content: enc_content,
+                            CT: oReq.response.CT,
+                            km: oReq.response.km,
+                            secret_rsa: oReq.response.secret_rsa,
+                            ppsParams: ppsParams,
+                            user_id: user_id,
+                            shared_users: oReq.response.shared_users
+                         });
+                    });
+                }
+                else
+                    alert('File Data not found on server!!');
+            };
+            oReq.send(JSON.stringify(request_data));
+        }
+        else
+            console.log(String.fromCharCode.apply(null, new Uint8Array(enc_content)));
+    };
+    oReq.send(null);
 }
 
 function completeDownload(data)
@@ -728,5 +727,43 @@ function completeUserRevoke(data)
 
 function downloadSharedFile()
 {
-    console.log("IMPLEMENT THIS ASAP");
+    var url = $(this).closest('tr').attr('path');
+
+    //download the encrypte contents from dropbox
+    var oReq = new XMLHttpRequest();
+    oReq.open("GET",url,true);
+    oReq.responseType="arraybuffer";
+    oReq.onload = function(oEvent){
+        var enc_content = this.response
+        //download the file metadata from the cloud server
+        var oReq2 = new XMLHttpRequest();
+        oReq2.open("POST",CLOUD_SERVER+'download_file_meta', true);
+        oReq2.responseType = "json";
+        oReq2.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        var request_data ={
+                "shared_url":url,
+                "receiver":user_id,
+        };
+        oReq2.onload = function(oEvent){
+            //on receiving metadata send contents for decryption
+            if(oReq2.response.success)
+            {
+                get_pps_params(function(ppsParams){
+                    common.naclModule.postMessage({ action: "decryption",
+                        content: enc_content,
+                        CT: oReq2.response.CT,
+                        km: oReq2.response.km,
+                        secret_rsa: oReq2.response.secret_rsa,
+                        ppsParams: ppsParams,
+                        user_id: user_id,
+                        shared_users: oReq2.response.shared_users
+                     });
+                });
+            }
+            else
+                alert('File Data not found on server!!');
+        };
+       oReq2.send(JSON.stringify(request_data));
+    };
+    oReq.send(null);
 }
