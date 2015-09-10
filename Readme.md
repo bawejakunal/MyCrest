@@ -19,6 +19,7 @@ Before getting started with the application, it is **important to setup the corr
 
 #####Running the Python Django Server
 It is important that the server is running properly and the first time setup of public parameters has been done before the users start using the extension.
+
 1. Navigate to `MyCrest/cloud` in the terminal.
 2. `python manage.py runserver 0.0.0.0:8000` to launch the cloud server protoype running with python based django framework.
 3. To check the correct running of the server, open `http://localhost:8000/crest/` in the browser.
@@ -26,6 +27,7 @@ It is important that the server is running properly and the first time setup of 
 
 #####Loading the extension in Google Chrome
 The MyCrest Chrome extension is based on the [Native Client Module](https://developer.chrome.com/native-client) which enables running of apps/extensions backed by C/C++ languages within the browser. Follow the steps below to load the application into the browser:
+
 1. Open a new tab in Google Chrome and navigate to `chrome://extensions`
 2. Click on `Load Unpacked Extension` and select the location of `MyCrest` folder.
 3. Alternatively user can also pack the application and drag and drop the generated `.crx` file into the tab to load the extension in the browser.
