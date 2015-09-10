@@ -9,6 +9,7 @@ MyCrest has been implemented as a browser extension for Google Chrome browser. T
 
 #####MySQL Database Setup
 Before getting started with the application, it is **important to setup the corresponding MySQL Database** that you intend to use with your application. Please follow the given steps to setup the database for MyCrest:
+
 1. Type `mysql -u root -p` to connect to your local MySQL server or any other MySQL server that you might be using.
 2. `create database crest` within your MySQL server. Do not use any other name as the Django framework will particularly look for this file while creating the database tables.
 3. **Provide database access to cloud application**. Open the file `MyCrest/cloud/cloud/settings.py` and update the `USER`, `PASSWORD`, `HOST` and `PORT` fields for the `DATABASES`.
