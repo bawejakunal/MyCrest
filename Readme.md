@@ -35,7 +35,3 @@ The MyCrest Chrome extension is based on the [Native Client Module](https://deve
 3. Alternatively user can also pack the application and drag and drop the generated `.crx` file into the tab to load the extension in the browser.
 4. Click on the `box icon` on top right to launch the application.
 5. Provide your `Dropbox Credentials` to authenticate the extension to be used in conjunction with `Dropbox`.
-
-                        MyCrest is now ready to be used to upload and share files over
-                        Dropbox, you can distribute the extension as a packaged .crx file
-                        to your intended test user group.
