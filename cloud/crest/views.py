@@ -8,6 +8,8 @@ import subprocess
 from Crypto.PublicKey import RSA
 from Crypto import Random
 import os
+import time
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 BACKEND  = PROJECT_ROOT+"/backend/"
 NUM_USERS = 100
@@ -19,16 +21,17 @@ def index(request):
 #invade the whole system. This stores the public parameter, private key, public key of user in database. 
 def server_setup(request):
     try:
+        start = time.clock()
         process = subprocess.check_output(BACKEND+"mainbgw setup " + str(NUM_USERS), shell=True,\
                                           stderr=subprocess.STDOUT)
-
+        print time.clock()-start
+        
         for i in xrange(1,NUM_USERS+1):
             private = RSA.generate(3072,Random.new().read)
             public = private.publickey()
             new_user = User(public_rsa=public.exportKey(), secret_rsa=private.exportKey())
             new_user.save()
 
-        # open_file.close()
         return HttpResponse("Done setting up...")
 
     except Exception as e:
