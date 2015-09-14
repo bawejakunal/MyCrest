@@ -28,6 +28,8 @@
 
   "web_accessible_resources": ["main.html"],
 
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhx5l2mwB9qmM76ROxqp7YJi29AMpCruiMXu9NRGtAMo8wR2avLWjctl4fFSnR8oxjQgmOm3M0RvEU6f2gMP7ZjwsPvvrnHrqIRQ1YrbvtPuWoYbsAB5Ysrea37FVKYCCsde/289XBFJRdSAi3XD69R8vAqOazq0AoPgFEdFvTwpvDDn5jnhINMc3DD8hTo0c8rNI9zttgDgEUWY2sTJiHNqXabovam46zrwbqD4lz29QCgK4wUg6jMShQXZC2AaLyjD+oEVB3yy3ZTAYD3HVgyzI1whAzXAsId1Se9/8gGzlT8MrHVvLK3kxtM44tN3jAHmh7ddbmJ08WSlVjFjqwIDAQAB",
+
   "background": {
     "scripts": ["js/background.js"]
   }
