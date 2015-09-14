@@ -23,7 +23,6 @@ def server_setup(request):
                                           stderr=subprocess.STDOUT)
 
         for i in xrange(1,NUM_USERS+1):
-            print i
             private = RSA.generate(3072,Random.new().read)
             public = private.publickey()
             new_user = User(public_rsa=public.exportKey(), secret_rsa=private.exportKey())

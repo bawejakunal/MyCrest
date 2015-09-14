@@ -2,7 +2,7 @@ var clientId = 'hi2bk01oe26hk8d';
 var clientsecret = '6547yu998k6p99f';
 var redirectUri = 'https://' + chrome.runtime.id + '.chromiumapp.org/main.html';
 
-var CLOUD_SERVER = "http://127.0.0.1:8000/crest/"
+var CLOUD_SERVER = "http://172.26.187.96:8000/crest/"
 
 var token_split = '---';
 
