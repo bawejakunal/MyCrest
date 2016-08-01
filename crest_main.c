@@ -9,6 +9,7 @@ void handleErrors(void)
 }
 
 /*Initialise 256 bit key and IV for cipher. Returns 0 on success, 1 on failure*/
+
 int aes_init(const char *keydata, int keydata_len, unsigned char *key, unsigned char *iv)
 {
   const char *salt = "1234554321";

@@ -40,6 +40,8 @@ class FileDB(models.Model):
     t = models.CharField("t for file", max_length=MAX_ELEMENT_LEN);
     t_new = models.CharField("new t for file", max_length=MAX_ELEMENT_LEN, null=True)
     shared_url = models.CharField("shared_url", max_length=MAX_ELEMENT_LEN,null=True)
+    file_signature = models.CharField("file_signature", max_length=MAX_ELEMENT_LEN,null=True)
+    public_key = models.CharField("public_key", max_length=MAX_ELEMENT_LEN,null=True)
 
     class Meta:
         unique_together = ('filePath', 'owner')

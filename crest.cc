@@ -65,6 +65,7 @@ class CrestInstance : public pp::Instance {
       }
 
       km = (char**)malloc(sizeof(char*)*num_users);
+      //Generate a randodm gamma for the new user for future sharing files
       Okeygen(pps,num_users,public_keys,km,&gamma);
 
       reply.Set("action","osetup");

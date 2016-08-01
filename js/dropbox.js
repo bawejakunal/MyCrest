@@ -2,7 +2,8 @@ var clientId = 'hi2bk01oe26hk8d';
 var clientsecret = '6547yu998k6p99f';
 var redirectUri = 'https://' + chrome.runtime.id + '.chromiumapp.org/main.html';
 
-var CLOUD_SERVER = "http://172.26.187.96:8000/crest/"
+//var CLOUD_SERVER = "http://172.26.187.96:8000/crest/"
+var CLOUD_SERVER = "http://127.0.0.1:8000/crest/"
 
 var token_split = '---';
 
@@ -239,6 +240,10 @@ function downloadFile(){
                 //on receiving metadata send contents for decryption
                 if(oReq.response.success)
                 {
+                    var file_signature = oReq.response.file_signature;
+                    var public_key = oReq.response.public_key;
+                    console.log("file_signature: " + file_signature + "; public_key: " + public_key);
+                    
                     get_pps_params(function(ppsParams){
                         common.naclModule.postMessage({ action: "decryption",
                             content: enc_content,
@@ -319,6 +324,8 @@ function startUpload()
                                                         shared_list: oReq.response.id_list,
                                                         gamma: oReq.response.gamma
                                                     });
+                            console.log(folderPath+file.name+".crest; " + file.type + "; " + evt.target.result + "; " + 
+                                ppsParams + "; " + oReq.response.id_list + "; " + oReq.response.gamma);
                         }
                         else
                             console.log(oReq.response);
@@ -364,7 +371,9 @@ function uploadFileMeta(filePath,user_id,CT,shared_users,t,url)
         "CT":CT,
         "shared":shared_users,
         "t":t,
-        "shared_url":url
+        "shared_url":url,
+        "file_signature": "signature",
+        "public_key": "public"
     };
     var oReq = new XMLHttpRequest();
     oReq.open("POST",CLOUD_SERVER+'upload_file_meta',true);
@@ -748,6 +757,9 @@ function downloadSharedFile()
             //on receiving metadata send contents for decryption
             if(oReq2.response.success)
             {
+                var file_signature = oReq2.response.file_signature;
+                var public_key = oReq2.response.public_key;
+                console.log("file_signature: " + file_signature + "; public_key: " + public_key);
                 get_pps_params(function(ppsParams){
                     common.naclModule.postMessage({ action: "decryption",
                         content: enc_content,

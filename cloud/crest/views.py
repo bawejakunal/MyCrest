@@ -3,7 +3,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import requests
 from .models import *
-from django.core.servers.basehttp import FileWrapper
+#from django.core.servers.basehttp import FileWrapper
+from wsgiref.util import FileWrapper
 import subprocess
 from Crypto.PublicKey import RSA
 from Crypto import Random
@@ -137,8 +138,9 @@ def add_ube_keys(request):
 @csrf_exempt
 def upload_file_meta(request):
     data = json.loads(request.body)
-    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'],t_new=data['t'],shared_url=data['shared_url'])
+    file_meta = FileDB(filePath=data['filePath'],owner_id=data['owner'],OC0=data['CT']['OC0'],OC1=data['CT']['OC1'],C1=data['CT']['C1'],C0=data['CT']['C0'],t=data['t'],t_new=data['t'],shared_url=data['shared_url'],file_signature=data['file_signature'],public_key=data['public_key'])
     file_meta.save()
+    print data['file_signature'] + " ; " + data['public_key'] 
 
     FileShare(File_id=file_meta.id,owner_id=data['owner'],receiver_id=data['owner']).save()  #add owner once and only once in shared table
     for receiver in data['shared']:
@@ -180,7 +182,9 @@ def download_file_meta(request):
             },
             'secret_rsa':user.secret_rsa,
             'km': recipient.km,
-            'shared_users':id_list
+            'shared_users':id_list,
+            'file_signature': File.file_signature,
+            'public_key': File.public_key
         }
     except Exception as e:
         print e
@@ -248,7 +252,7 @@ def get_id_list_gamma(request):
     rdata = json.dumps(return_data)
     return HttpResponse(rdata, content_type='application/json')
 
-#Method fetches all the required parameters for sharning for the owner and sends back as response
+#Method fetches all the required parameters for sharing for the owner and sends back as response
 @csrf_exempt
 def get_share_params(request):
     data = json.loads(request.body)
